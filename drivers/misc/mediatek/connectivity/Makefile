@@ -62,11 +62,17 @@ ifeq ($(CONFIG_WLAN_DRV_BUILD_IN),y)
     export WIFI_IP_SET=1
     export WIFI_ECO_VER=1
     export MTK_WLAN_SERVICE=yes
+    export CFG_BUILD_CONNAC2=true
 
 # Do build-in for xxx.c checking
 subdir-ccflags-y += -D MTK_WCN_REMOVE_KERNEL_MODULE
 subdir-ccflags-y += -D MTK_WCN_BUILT_IN_DRIVER
-obj-y += wmt_drv/
-obj-y += wmt_chrdev_wifi/
-obj-y += wlan_drv_gen4m/
 endif
+
+obj-$(CONFIG_MTK_COMBO) += conninfra/
+obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/adaptor/
+obj-$(CONFIG_MTK_COMBO_CHIP_CONSYS_6877) += wlan/core/gen4m/
+obj-$(CONFIG_MTK_BTIF) += bt/mt66xx/btif/
+obj-$(CONFIG_MTK_COMBO_GPS) += gps/
+obj-$(CONFIG_MTK_FMRADIO) += fmradio/
+obj-$(CONFIG_MTK_CONNFEM) += connfem/
