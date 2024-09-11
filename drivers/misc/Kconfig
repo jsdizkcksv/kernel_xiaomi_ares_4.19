@@ -550,6 +550,11 @@ config FACTORY_BUILD
 	  This macro will be defined when build factory version. It is used to
 	  distinguish factory and dev codes in kernel.
 
+config TARGET_PRODUCT
+	string "xiaomi hardware product config"
+	help
+	 xiaomi hardware product config, needed by some drivers to use device specific optimizations.
+
 config GPIO_TESTING_MODE
 	tristate "A simple GPIO testing mode driver"
 	default n
