@@ -211,5 +211,19 @@ obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_MTK_TASK_TURBO) += task_turbo/
 obj-$(CONFIG_AW862xx_HAPTIC) += aw862xx_haptic/
 subdir-ccflags-y += -D_XIAOMI_
-subdir-ccflags-y += -D_XIAOMI_AGATE_
 
+ifeq ($(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES),"mediatek/ares")
+subdir-ccflags-y += -D_XIAOMI_ARES_
+endif
+
+ifeq ($(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES),"mediatek/chopin")
+subdir-ccflags-y += -D_XIAOMI_CHOPIN_
+endif
+
+ifeq ($(CONFIG_BUILD_XIAOMI_CAMERA_IMAGE_NAMES),"mediatek/agate")
+subdir-ccflags-y += -D_XIAOMI_AGATE_
+endif
+
+ifeq ($(CONFIG_BUILD_XIAOMI_CAMERA_IMAGE_NAMES),"mediatek/pissarro")
+subdir-ccflags-y += -D_XIAOMI_PISSARRO_
+endif

@@ -1452,6 +1452,11 @@ config BUILD_ARM64_DTB_OVERLAY_IMAGE
 	  Overlay DT contains device-specific configurations.
 	  Please be aware that bootloader supports DT merging.
 
+config BUILD_XIAOMI_CAMERA_IMAGE_NAMES
+	string "To distinguish different project name"
+	help
+	  For Camera to distinguish project names.
+
 choice
         prompt "Appended DTB Kernel Image name"
         depends on BUILD_ARM64_APPENDED_DTB_IMAGE
