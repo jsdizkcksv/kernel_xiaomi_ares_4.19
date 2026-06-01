@@ -1,1 +1,5 @@
-obj-$(CONFIG_MILLET)                       += ../../../vendor/xiaomi/kernel_modules/mihw/
+
+obj-$(CONFIG_MILLET)			+= millet_core.o
+obj-$(CONFIG_MILLET)			+= millet_pkg.o
+obj-$(CONFIG_MILLET)			+= millet_hs.o
+
