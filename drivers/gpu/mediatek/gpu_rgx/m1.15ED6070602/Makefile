@@ -1,29 +1,37 @@
 OPTIM = -Os
 
-ifeq ($(MTK_PLATFORM),mt6855)
-	PVR_ARCH := volcanic
-	CONFIG_MACH_MT6855 := y
+$(info [GPU_DEBUG] MTK_PLATFORM = $(MTK_PLATFORM))
+
+ifeq ($(MTK_PLATFORM),mt6765)
+	ccflags-y += -DCONFIG_MACH_MT6765
+else ifeq ($(MTK_PLATFORM),mt6779)
+	ccflags-y += -DCONFIG_MACH_MT6779
 else ifeq ($(MTK_PLATFORM),mt6761)
-	PVR_ARCH := rogue
-	CONFIG_MACH_MT6761 := y
-else ifeq ($(MTK_PLATFORM),mt6765)
-	PVR_ARCH := rogue
-	CONFIG_MACH_MT6765 := y
+	ccflags-y += -DCONFIG_MACH_MT6761
+else ifeq ($(MTK_PLATFORM),mt6739)
+	ccflags-y += -DCONFIG_MACH_MT6739
 endif
 
 ccflags-$(CONFIG_MTK_TINYSYS_SSPM_SUPPORT) += -DSSPM_DEBUG
 
-RGX_TOP := $(if $(filter /%,$(src)),,$(srctree)/)$(src)
+ifeq ($(word 2,$(MTK_GPU_VERSION)),marlowe)
+	ECO := v2
+	ccflags-y += -DMTCMOS_MFG3
+	ccflags-y += -DMTK_MARLOWE
+else
+	ECO := ""
+endif
 
-$(info [GPU_DEBUG] MTK_PLATFORM = $(MTK_PLATFORM))
-$(info [GPU_DEBUG] RGX_TOP=$(RGX_TOP))
+RGX_TOP := $(dir $(lastword $(MAKEFILE_LIST)))
+
+#MTK_DDK_DEBUG := y
 
 ifeq ($(MTK_DDK_DEBUG),y)
-	ccflags-y += -include $(RGX_TOP)/include/config_kernel_debug_$(MTK_PLATFORM).h
+	ccflags-y += -include $(RGX_TOP)/include/config_kernel_debug_$(MTK_PLATFORM)$(ECO).h
 else ifeq ($(CONFIG_MTK_ENG_BUILD),y)
-	ccflags-y += -include $(RGX_TOP)/include/config_kernel_eng_$(MTK_PLATFORM).h
+	ccflags-y += -include $(RGX_TOP)/include/config_kernel_eng_$(MTK_PLATFORM)$(ECO).h
 else
-	ccflags-y += -include $(RGX_TOP)/include/config_kernel_user_$(MTK_PLATFORM).h
+	ccflags-y += -include $(RGX_TOP)/include/config_kernel_user_$(MTK_PLATFORM)$(ECO).h
 endif
 
 ccflags-y += \
@@ -41,69 +49,73 @@ ccflags-y += \
 	-Wno-error
 
 pvrsrvkm-y += \
-	generated/$(PVR_ARCH)/cache_bridge/server_cache_bridge.o \
-	generated/$(PVR_ARCH)/cache_bridge/client_cache_direct_bridge.o \
-	generated/$(PVR_ARCH)/rgxta3d_bridge/server_rgxta3d_bridge.o \
-	generated/$(PVR_ARCH)/sync_bridge/client_sync_direct_bridge.o \
-	generated/$(PVR_ARCH)/sync_bridge/server_sync_bridge.o \
-	generated/$(PVR_ARCH)/synctracking_bridge/client_synctracking_direct_bridge.o \
-	generated/$(PVR_ARCH)/synctracking_bridge/server_synctracking_bridge.o \
-	generated/$(PVR_ARCH)/srvcore_bridge/server_srvcore_bridge.o \
-	generated/$(PVR_ARCH)/devicememhistory_bridge/client_devicememhistory_direct_bridge.o \
-	generated/$(PVR_ARCH)/devicememhistory_bridge/server_devicememhistory_bridge.o \
-	generated/$(PVR_ARCH)/rgxcmp_bridge/server_rgxcmp_bridge.o \
-	generated/$(PVR_ARCH)/rgxhwperf_bridge/server_rgxhwperf_bridge.o \
-	generated/$(PVR_ARCH)/rgxfwdbg_bridge/server_rgxfwdbg_bridge.o \
-	generated/$(PVR_ARCH)/rgxregconfig_bridge/server_rgxregconfig_bridge.o \
-	generated/$(PVR_ARCH)/htbuffer_bridge/client_htbuffer_direct_bridge.o \
-	generated/$(PVR_ARCH)/htbuffer_bridge/server_htbuffer_bridge.o \
-	generated/$(PVR_ARCH)/cmm_bridge/server_cmm_bridge.o \
-	generated/$(PVR_ARCH)/mm_bridge/client_mm_direct_bridge.o \
-	generated/$(PVR_ARCH)/mm_bridge/server_mm_bridge.o \
-	generated/$(PVR_ARCH)/rgxkicksync_bridge/server_rgxkicksync_bridge.o \
-	generated/$(PVR_ARCH)/pvrtl_bridge/server_pvrtl_bridge.o \
-	generated/$(PVR_ARCH)/pvrtl_bridge/client_pvrtl_direct_bridge.o \
-	generated/$(PVR_ARCH)/rgxsignals_bridge/server_rgxsignals_bridge.o \
-	generated/$(PVR_ARCH)/rgxtq2_bridge/server_rgxtq2_bridge.o \
-	generated/$(PVR_ARCH)/dmabuf_bridge/server_dmabuf_bridge.o \
-	generated/$(PVR_ARCH)/rgxtimerquery_bridge/server_rgxtimerquery_bridge.o \
-	generated/$(PVR_ARCH)/di_bridge/server_di_bridge.o \
-	services/system/$(PVR_ARCH)/rgx_mtk/ion_support.o \
-	services/system/$(PVR_ARCH)/rgx_mtk/sysconfig.o \
-	services/system/$(PVR_ARCH)/rgx_mtk/$(MTK_PLATFORM)/mtk_mfgsys.o \
-	services/system/$(PVR_ARCH)/rgx_mtk/mtk_pp.o \
-	services/system/$(PVR_ARCH)/common/vmm_type_stub.o \
-	services/system/$(PVR_ARCH)/common/env/linux/interrupt_support.o \
-	services/system/$(PVR_ARCH)/common/env/linux/dma_support.o \
+	generated/rogue/cache_bridge/server_cache_bridge.o \
+	generated/rogue/cache_bridge/client_cache_direct_bridge.o \
+	generated/rogue/rgxta3d_bridge/server_rgxta3d_bridge.o \
+	generated/rogue/sync_bridge/client_sync_direct_bridge.o \
+	generated/rogue/sync_bridge/server_sync_bridge.o \
+	generated/rogue/synctracking_bridge/client_synctracking_direct_bridge.o \
+	generated/rogue/synctracking_bridge/server_synctracking_bridge.o \
+	generated/rogue/srvcore_bridge/server_srvcore_bridge.o \
+	generated/rogue/devicememhistory_bridge/client_devicememhistory_direct_bridge.o \
+	generated/rogue/devicememhistory_bridge/server_devicememhistory_bridge.o \
+	generated/rogue/rgxcmp_bridge/server_rgxcmp_bridge.o \
+	generated/rogue/rgxhwperf_bridge/server_rgxhwperf_bridge.o \
+	generated/rogue/rgxfwdbg_bridge/server_rgxfwdbg_bridge.o \
+	generated/rogue/rgxbreakpoint_bridge/server_rgxbreakpoint_bridge.o \
+	generated/rogue/rgxregconfig_bridge/server_rgxregconfig_bridge.o \
+	generated/rogue/htbuffer_bridge/client_htbuffer_direct_bridge.o \
+	generated/rogue/htbuffer_bridge/server_htbuffer_bridge.o \
+	generated/rogue/cmm_bridge/server_cmm_bridge.o \
+	generated/rogue/rgxtq_bridge/server_rgxtq_bridge.o \
+	generated/rogue/mm_bridge/client_mm_direct_bridge.o \
+	generated/rogue/mm_bridge/server_mm_bridge.o \
+	generated/rogue/rgxkicksync_bridge/server_rgxkicksync_bridge.o \
+	generated/rogue/pvrtl_bridge/server_pvrtl_bridge.o \
+	generated/rogue/pvrtl_bridge/client_pvrtl_direct_bridge.o \
+	generated/rogue/rgxsignals_bridge/server_rgxsignals_bridge.o \
+	generated/rogue/rgxtq2_bridge/server_rgxtq2_bridge.o \
+	generated/rogue/dmabuf_bridge/server_dmabuf_bridge.o \
+	generated/rogue/rgxtimerquery_bridge/server_rgxtimerquery_bridge.o \
+	generated/rogue/di_bridge/server_di_bridge.o \
+	services/system/rogue/rgx_mtk/ion_support.o \
+	services/system/rogue/rgx_mtk/sysconfig.o \
+	services/system/rogue/rgx_mtk/$(MTK_PLATFORM)/mtk_mfgsys.o \
+	services/system/rogue/rgx_mtk/mtk_pp.o \
+	services/system/rogue/common/vmm_type_stub.o \
+	services/system/rogue/common/env/linux/interrupt_support.o \
+	services/system/rogue/common/env/linux/dma_support.o \
 	services/server/devices/rgxtimecorr.o \
 	services/server/devices/rgxfwdbg.o \
 	services/server/devices/rgxshader.o \
 	services/server/devices/rgxfwtrace_strings.o \
 	services/server/devices/rgxutils.o \
 	services/server/devices/rgxmem.o \
+	services/server/devices/rogue/rgxhwperf.o \
 	services/server/devices/rgxfwimageutils.o \
+	services/server/devices/rogue/rgxfwutils.o \
 	services/server/devices/rgxccb.o \
+	services/server/devices/rogue/rgxmmuinit.o \
+	services/server/devices/rogue/rgxtransfer.o \
 	services/server/devices/rgxbreakpoint.o \
+	services/server/devices/rogue/rgxmipsmmuinit.o \
+	services/server/devices/rogue/rgxinit.o \
 	services/server/devices/rgxsignals.o \
+	services/server/devices/rogue/rgxlayer_impl.o \
+	services/server/devices/rogue/rgxtdmtransfer.o \
 	services/server/devices/rgxbvnc.o \
+	services/server/devices/rogue/rgxdebug.o \
+	services/server/devices/rogue/rgxta3d.o \
 	services/server/devices/rgxkicksync.o \
+	services/server/devices/rogue/rgxsrvinit.o \
 	services/server/devices/rgxregconfig.o \
+	services/server/devices/rogue/rgxcompute.o \
+	services/server/devices/rogue/rgxstartstop.o \
+	services/server/devices/rogue/rgxpower.o \
 	services/server/devices/rgxsyncutils.o \
+	services/server/devices/rogue/rgxmulticore.o \
 	services/server/devices/rgxtimerquery.o \
 	services/server/devices/rgxhwperf_common.o \
-	services/server/devices/$(PVR_ARCH)/rgxhwperf.o \
-	services/server/devices/$(PVR_ARCH)/rgxfwutils.o \
-	services/server/devices/$(PVR_ARCH)/rgxmmuinit.o \
-	services/server/devices/$(PVR_ARCH)/rgxinit.o \
-	services/server/devices/$(PVR_ARCH)/rgxlayer_impl.o \
-	services/server/devices/$(PVR_ARCH)/rgxtdmtransfer.o \
-	services/server/devices/$(PVR_ARCH)/rgxdebug.o \
-	services/server/devices/$(PVR_ARCH)/rgxta3d.o \
-	services/server/devices/$(PVR_ARCH)/rgxsrvinit.o \
-	services/server/devices/$(PVR_ARCH)/rgxcompute.o \
-	services/server/devices/$(PVR_ARCH)/rgxstartstop.o \
-	services/server/devices/$(PVR_ARCH)/rgxpower.o \
-	services/server/devices/$(PVR_ARCH)/rgxmulticore.o \
 	services/server/common/tlstream.o \
 	services/server/common/pvrsrv_pool.o \
 	services/server/common/cache_km.o \
@@ -160,6 +172,7 @@ pvrsrvkm-y += \
 	services/server/env/linux/pvr_ion_stats.o \
 	services/server/env/linux/pvr_drm.o \
 	services/server/env/linux/pvr_platform_drv.o \
+	services/shared/devices/rogue/rgx_hwperf_table.o \
 	services/shared/common/devicemem_utils.o \
 	services/shared/common/hash.o \
 	services/shared/common/ra.o \
@@ -170,21 +183,6 @@ pvrsrvkm-y += \
 	services/shared/common/htbuffer.o \
 	services/shared/common/mem_utils.o \
 	services/shared/common/pvrsrv_error.o
-
-ifeq ($(PVR_ARCH),volcanic)
-	pvrsrvkm-y += \
-		generated/volcanic/rgxray_bridge/server_rgxray_bridge.o \
-		services/server/devices/volcanic/rgxray.o
-endif
-
-ifeq ($(PVR_ARCH),rogue)
-	pvrsrvkm-y += \
-		services/shared/devices/rogue/rgx_hwperf_table.o \
-		services/server/devices/rogue/rgxmipsmmuinit.o \
-		services/server/devices/rogue/rgxtransfer.o \
-		generated/rogue/rgxtq_bridge/server_rgxtq_bridge.o \
-		generated/rogue/rgxbreakpoint_bridge/server_rgxbreakpoint_bridge.o
-endif
 
 ifeq ($(CONFIG_SYNC_FILE),y)
 	pvrsrvkm-y += \
@@ -201,71 +199,86 @@ pvrsrvkm-$(CONFIG_ARM) += services/server/env/linux/osfunc_arm.o
 pvrsrvkm-$(CONFIG_ARM64) += services/server/env/linux/osfunc_arm64.o
 pvrsrvkm-$(CONFIG_EVENT_TRACING) += services/server/env/linux/trace_events.o
 
+ifeq ($(MTK_PLATFORM),mt6799)
+	pvrsrvkm-y += \
+		services/system/rogue/rgx_mtk/$(MTK_PLATFORM)/mtk_mfg_counter.o
+endif
+
 ccflags-y += \
-	-I$(RGX_TOP)/hwdefs/$(PVR_ARCH) \
-	-I$(RGX_TOP)/hwdefs/$(PVR_ARCH)/km \
-	-I$(RGX_TOP)/hwdefs/$(PVR_ARCH)/km/configs \
-	-I$(RGX_TOP)/hwdefs/$(PVR_ARCH)/km/cores \
+	-I$(RGX_TOP)/hwdefs/rogue \
+	-I$(RGX_TOP)/hwdefs/rogue/km \
+	-I$(RGX_TOP)/hwdefs/rogue/km/configs \
+	-I$(RGX_TOP)/hwdefs/rogue/km/cores \
 	-I$(RGX_TOP)/include \
-	-I$(RGX_TOP)/include/$(PVR_ARCH) \
+	-I$(RGX_TOP)/include/rogue \
 	-I$(RGX_TOP)/include/drm \
 	-I$(RGX_TOP)/include/public \
 	-I$(RGX_TOP)/kernel/drivers/staging/imgtec \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/cache_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/cmm_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/dmabuf_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/htbuffer_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/mm_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/pvrtl_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxbreakpoint_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxcmp_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxfwdbg_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxhwperf_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxinit_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxkicksync_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxregconfig_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxtimerquery_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxta3d_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxray_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxtq_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxtq2_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/srvcore_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/sync_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/synctracking_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/devicememhistory_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxsignals_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/ri_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/di_bridge \
-	-I$(RGX_TOP)/generated/$(PVR_ARCH)/rgxtimerquery_bridge/server_rgxtimerquery_bridge \
+	-I$(RGX_TOP)/generated/rogue/cache_bridge \
+	-I$(RGX_TOP)/generated/rogue/cmm_bridge \
+	-I$(RGX_TOP)/generated/rogue/dmabuf_bridge \
+	-I$(RGX_TOP)/generated/rogue/htbuffer_bridge \
+	-I$(RGX_TOP)/generated/rogue/mm_bridge \
+	-I$(RGX_TOP)/generated/rogue/pvrtl_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxbreakpoint_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxcmp_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxfwdbg_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxhwperf_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxinit_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxkicksync_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxregconfig_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxta3d_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxtq_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxtq2_bridge \
+	-I$(RGX_TOP)/generated/rogue/srvcore_bridge \
+	-I$(RGX_TOP)/generated/rogue/sync_bridge \
+	-I$(RGX_TOP)/generated/rogue/synctracking_bridge \
+	-I$(RGX_TOP)/generated/rogue/devicememhistory_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxsignals_bridge \
+	-I$(RGX_TOP)/generated/rogue/ri_bridge \
+	-I$(RGX_TOP)/generated/rogue/rgxtimerquery_bridge/server_rgxtimerquery_bridge \
 	-I$(RGX_TOP)/services/include \
-	-I$(RGX_TOP)/services/include/$(PVR_ARCH) \
+	-I$(RGX_TOP)/services/include/rogue \
 	-I$(RGX_TOP)/services/include/env/linux \
 	-I$(RGX_TOP)/services/server/devices \
-	-I$(RGX_TOP)/services/server/devices/$(PVR_ARCH) \
+	-I$(RGX_TOP)/services/server/devices/rogue \
 	-I$(RGX_TOP)/services/server/env/linux \
-	-I$(RGX_TOP)/services/server/env/linux/$(PVR_ARCH) \
+	-I$(RGX_TOP)/services/server/env/linux/rogue \
 	-I$(RGX_TOP)/services/server/include \
-	-I$(RGX_TOP)/services/server/common \
-	-I$(RGX_TOP)/services/server/include/$(PVR_ARCH) \
+	-I$(RGX_TOP)/services/server/include/rogue \
 	-I$(RGX_TOP)/services/shared/common \
-	-I$(RGX_TOP)/services/shared/devices/$(PVR_ARCH) \
+	-I$(RGX_TOP)/services/shared/devices/rogue \
 	-I$(RGX_TOP)/services/shared/include \
-	-I$(RGX_TOP)/services/system/include \
-	-I$(RGX_TOP)/services/system/$(PVR_ARCH)/include \
-	-I$(RGX_TOP)/services/system/$(PVR_ARCH)/rgx_mtk \
-	-I$(RGX_TOP)/services/system/$(PVR_ARCH)/rgx_mtk/$(MTK_PLATFORM)
+	-I$(RGX_TOP)/services/system/rogue/include \
+	-I$(RGX_TOP)/services/system/rogue/rgx_mtk \
+	-I$(RGX_TOP)/services/system/rogue/rgx_mtk/$(MTK_PLATFORM)
 
+ifeq ($(MTK_PLATFORM),mt6761)
+	ccflags-y += \
+	 -I$(RGX_TOP)/services/system/rogue/rgx_mtk \
+	 -I$(RGX_TOP)/generated/rogue/di_bridge \
+	 -I$(RGX_TOP)/generated/rogue/rgxtimerquery_bridge \
+	 -I$(RGX_TOP)/services/system/include \
+	 -I$(RGX_TOP)/services/server/include \
+	 -I$(RGX_TOP)/services/include \
+	 -I$(RGX_TOP)/services/include/rogue \
+	 -I$(RGX_TOP)/services/server/devices/rogue \
+	 -I$(RGX_TOP)/services/shared/include \
+	 -I$(RGX_TOP)/services/system \
+	 -I$(RGX_TOP)/services/system/rogue/include \
+	 -I$(RGX_TOP)/services/server/common
+endif
+
+# GPU mt-plat: drivers/gpu/mediatek/mt-plat
+# Legacy mt-plat: drivers/misc/mediatek/include/mt-plat
 ccflags-y += \
 	-I$(srctree)/drivers/staging/android/ion \
 	-I$(srctree)/drivers/staging/android/ion/mtk \
 	-I$(srctree)/drivers/gpu/mediatek \
 	-I$(srctree)/drivers/gpu/mediatek/ged/include \
 	-I$(srctree)/drivers/gpu/mediatek/mt-plat \
-	-I$(srctree)/drivers/gpu/mediatek/gpufreq/v2/include \
+	-I$(srctree)/drivers/gpu/mediatek/gpufreq/include \
 	-I$(srctree)/drivers/gpu/mediatek/gpu_bm \
-	-I$(srctree)/drivers/misc/mediatek/include/mt-plat
+	-I$(srctree)/drivers/misc/mediatek/include/mt-plat \
 
-ifneq ($(filter $(CONFIG_MTK_GPU_SUPPORT),y m),)
-	obj-m += pvrsrvkm_$(MTK_PLATFORM).o
-	pvrsrvkm_$(MTK_PLATFORM)-y := pvrsrvkm.o
-endif
+obj-$(CONFIG_MTK_GPU_SUPPORT) += pvrsrvkm.o
