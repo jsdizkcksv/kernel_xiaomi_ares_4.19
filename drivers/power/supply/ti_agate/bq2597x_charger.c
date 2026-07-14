@@ -54,7 +54,7 @@ enum {
 	ADC_MAX_NUM,
 };
 
-static float sc8551_adc_lsb[] = {
+static int sc8551_adc_lsb[] = {
 	[ADC_IBUS]	= SC8551_IBUS_ADC_LSB,
 	[ADC_VBUS]	= SC8551_VBUS_ADC_LSB,
 	[ADC_VAC]	= SC8551_VAC_ADC_LSB,
@@ -1085,27 +1085,10 @@ static int bq2597x_get_adc_data(struct bq2597x *bq, int channel,  int *result)
 	t |= (val >> 8) & 0xFF;
 	*result = t;
 
-
 	if (bq->chip_vendor == SC8551) {
-		if (channel == ADC_IBUS)
-			t = t * SC8551_IBUS_ADC_LSB;
-		else if (channel == ADC_VBUS)
-			t = t * SC8551_VBUS_ADC_LSB;
-		else if (channel == ADC_VAC)
-			t= t * SC8551_VAC_ADC_LSB;
-		else if (channel == ADC_VOUT)
-			t = t* SC8551_VOUT_ADC_LSB;
-		else if (channel == ADC_VBAT)
-			t = t * SC8551_VBAT_ADC_LSB;
-		else if (channel == ADC_IBAT)
-			t = t * SC8551_IBAT_ADC_LSB;
-		else if (channel == ADC_TDIE)
-			t = t * SC8551_TDIE_ADC_LSB;
-/*		kernel_neon_begin();
-		*result = (int)(t * sc8551_adc_lsb[channel]);
-		kernel_neon_end();
-*/
-		*result =t;
+		
+		/* Multiply by the scaled macro, then divide by the 10000 scale factor */
+		*result = (t * sc8551_adc_lsb[channel]) / 10000;
 	}
 
 	return 0;

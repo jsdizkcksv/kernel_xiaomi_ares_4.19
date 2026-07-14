@@ -790,15 +790,15 @@
 #define BQ2597X_IBUS_LOW_DG_10US			0
 #define BQ2597X_IBUS_LOW_DG_5MS				1
 
-#define SC8551_IBUS_ADC_LSB				(15625 / 10000)
-#define SC8551_VBUS_ADC_LSB				(375 / 100)
-#define SC8551_VAC_ADC_LSB				5
-#define SC8551_VOUT_ADC_LSB				(125/100)
-#define SC8551_VBAT_ADC_LSB				(12575 /10000)
-#define SC8551_IBAT_ADC_LSB				(3125/1000)
-#define SC8551_TSBUS_ADC_LSB				1
-#define SC8551_TSBAT_ADC_LSB				1
-#define SC8551_TDIE_ADC_LSB				1
+#define SC8551_IBUS_ADC_LSB     			15625  /* 1.5625 * 10000 */
+#define SC8551_VBUS_ADC_LSB     			37500  /* 3.75 * 10000 */
+#define SC8551_VAC_ADC_LSB      			50000  /* 5 * 10000 */
+#define SC8551_VOUT_ADC_LSB     			12500  /* 1.25 * 10000 */
+#define SC8551_VBAT_ADC_LSB     			12575  /* 1.2575 * 10000 */
+#define SC8551_IBAT_ADC_LSB     			31250  /* 3.125 * 10000 */
+#define SC8551_TSBUS_ADC_LSB				10000  /* 1 * 10000 */
+#define SC8551_TSBAT_ADC_LSB				10000  /* 1 * 10000 */
+#define SC8551_TDIE_ADC_LSB				10000  /* 1 * 10000 */
 
 /* Register 00h */
 #define SC8551_BAT_OVP_BASE				3500
