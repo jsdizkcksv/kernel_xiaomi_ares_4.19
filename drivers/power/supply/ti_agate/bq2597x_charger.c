@@ -2193,7 +2193,7 @@ static int bq2597x_init_device(struct bq2597x *bq)
 	bq2597x_init_regulation(bq);
 
 	bq2597x_get_work_mode(bq, &work_mode);
-	if (bq->cfg->sc8551a_dual_standalone
+	if (bq->cfg && bq->cfg->sc8551a_dual_standalone
 			&& work_mode == BQ25970_ROLE_STDALONE
 			&& bq->mode == BQ25970_ROLE_SLAVE)
 		bq2597x_disable_vbus_inrge_det(bq, true);
