@@ -149,6 +149,12 @@ static enum power_supply_property battery_props[] = {
 #endif
 
 };
+struct tag_bootmode {
+	u32 size;
+	u32 tag;
+	u32 bootmode;
+	u32 boottype;
+};
 
 /* weak function */
 int __attribute__ ((weak))
@@ -290,7 +296,7 @@ bool is_battery_init_done(void)
 
 bool is_recovery_mode(void)
 {
-	int boot_mode = get_boot_mode();
+	int boot_mode = battery_get_boot_mode();
 
 	if (is_fg_disabled())
 		return false;
@@ -303,6 +309,33 @@ bool is_recovery_mode(void)
 	}
 
 	return false;
+}
+
+int battery_get_boot_mode(void)
+{
+	struct device *dev = NULL;
+	struct device_node *boot_node = NULL;
+	struct tag_bootmode *tag = NULL;
+	int boot_mode = 11;//UNKNOWN_BOOT
+
+	dev = gm.gdev->dev.parent;
+	if (dev != NULL) {
+		boot_node = of_parse_phandle(dev->of_node, "bootmode", 0);
+		if (!boot_node) {
+			bm_err("%s: failed to get boot mode phandle\n", __func__);
+		} else {
+			tag = (struct tag_bootmode *)of_get_property(boot_node,
+								"atag,boot", NULL);
+			if (!tag)
+				bm_err("%s: failed to get atag,boot\n", __func__);
+			else {
+				boot_mode = tag->bootmode;
+				gm.boot_mode = tag->bootmode;
+			}
+		}
+	}
+	bm_debug("%s: boot mode=%d\n", __func__, boot_mode);
+	return boot_mode;
 }
 
 bool is_fg_disabled(void)
@@ -896,7 +929,7 @@ void battery_update(struct battery_data *bat_data)
 
 bool is_kernel_power_off_charging(void)
 {
-	int boot_mode = get_boot_mode();
+	int boot_mode = battery_get_boot_mode();
 
 	if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
 	    || boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {

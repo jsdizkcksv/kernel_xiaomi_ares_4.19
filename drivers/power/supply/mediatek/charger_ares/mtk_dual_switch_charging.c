@@ -149,12 +149,6 @@ dual_swchg_select_charging_current_limit(struct charger_manager *info)
 		goto done;
 	}
 
-	if ((get_boot_mode() == META_BOOT) ||
-	    (get_boot_mode() == ADVMETA_BOOT)) {
-		pdata->input_current_limit = 200000; /* 200mA */
-		goto done;
-	}
-
 	if (info->atm_enabled == true && (info->chr_type == STANDARD_HOST ||
 	    info->chr_type == CHARGING_HOST)) {
 		pdata->input_current_limit = 100000; /* 100mA */
@@ -559,11 +553,6 @@ static void dual_swchg_turn_on_charging(struct charger_manager *info)
 		chg1_enable = false;
 		chg2_enable = false;
 		pr_notice("Charging Error, disable charging!\n");
-	} else if ((get_boot_mode() == META_BOOT) ||
-		   (get_boot_mode() == ADVMETA_BOOT)) {
-		chg1_enable = false;
-		chg2_enable = false;
-		pr_notice("In meta mode, disable charging\n");
 	} else {
 		mtk_pe20_start_algorithm(info);
 		if (mtk_pe20_get_is_connect(info) == false)

@@ -396,9 +396,6 @@ bool mtk_pe40_get_is_connect(struct charger_manager *pinfo)
 	if (pinfo->enable_pe_4 == false)
 		return false;
 
-	if ((get_boot_mode() == META_BOOT) && (get_boot_mode() == ADVMETA_BOOT))
-		return false;
-
 	return pinfo->pe4.is_connect;
 }
 

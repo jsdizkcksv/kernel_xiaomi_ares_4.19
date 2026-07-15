@@ -148,10 +148,6 @@ static void linear_chg_turn_on_charging(struct charger_manager *info)
 	if (algo_data->state == CHR_ERROR) {
 		charging_enable = false;
 		chr_err("[charger]Charger Error, turn OFF charging !\n");
-	} else if ((get_boot_mode() == META_BOOT) ||
-			((get_boot_mode() == ADVMETA_BOOT))) {
-		charging_enable = false;
-		chr_err("[charger]In meta or advanced meta mode, disable charging\n");
 	} else {
 		linear_chg_select_charging_current_limit(info);
 		if (info->chg1_data.charging_current_limit == 0) {

@@ -60,11 +60,19 @@
 #include <linux/seq_file.h>
 #include <linux/scatterlist.h>
 #include <linux/suspend.h>
+#include <linux/of.h>
 
 #include <mt-plat/mtk_boot.h>
 /* #include <musb_core.h> */ /* FIXME */
 #include "mtk_charger_intf.h"
 #include "mtk_switch_charging.h"
+
+struct tag_bootmode {
+	u32 size;
+	u32 tag;
+	u32 bootmode;
+	u32 boottype;
+};
 
 static int _uA_to_mA(int uA)
 {
@@ -110,6 +118,28 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 	u32 ichg1_min = 0, aicr1_min = 0;
 	int ret = 0;
+	
+	struct device *dev = NULL;
+	struct device_node *boot_node = NULL;
+	struct tag_bootmode *tag = NULL;
+	int boot_mode = 11;//UNKNOWN_BOOT
+
+	dev = &(info->pdev->dev);
+	if (dev != NULL){
+		boot_node = of_parse_phandle(dev->of_node, "bootmode", 0);
+		if (!boot_node){
+			chr_err("%s: failed to get boot mode phandle\n", __func__);
+		}
+		else {
+			tag = (struct tag_bootmode *)of_get_property(boot_node,
+								"atag,boot", NULL);
+			if (!tag){
+				chr_err("%s: failed to get atag,boot\n", __func__);
+			}
+			else
+				boot_mode = tag->bootmode;
+		}
+	}
 
 	if (info->pe5.online) {
 		chr_err("In PE5.0\n");
@@ -165,8 +195,8 @@ static void swchg_select_charging_current_limit(struct charger_manager *info)
 		goto done;
 	}
 
-	if ((get_boot_mode() == META_BOOT) ||
-	    (get_boot_mode() == ADVMETA_BOOT)) {
+	if ((boot_mode == META_BOOT) ||
+	    (boot_mode == ADVMETA_BOOT)) {
 		pdata->input_current_limit = 200000; /* 200mA */
 		goto done;
 	}
@@ -336,7 +366,7 @@ done:
 	if (ret != -ENOTSUPP && pdata->input_current_limit < aicr1_min)
 		pdata->input_current_limit = 0;
 
-	chr_err("force:%d thermal:%d,%d pe4:%d,%d,%d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d\n",
+	chr_err("force:%d thermal:%d,%d pe4:%d,%d,%d setting:%d %d type:%d usb_unlimited:%d usbif:%d usbsm:%d aicl:%d atm:%d boot_mode:%d\n",
 		_uA_to_mA(pdata->force_charging_current),
 		_uA_to_mA(pdata->thermal_input_current_limit),
 		_uA_to_mA(pdata->thermal_charging_current_limit),
@@ -347,7 +377,8 @@ done:
 		_uA_to_mA(pdata->charging_current_limit),
 		info->chr_type, info->usb_unlimited,
 		IS_ENABLED(CONFIG_USBIF_COMPLIANCE), info->usb_state,
-		pdata->input_current_limit_by_aicl, info->atm_enabled);
+		pdata->input_current_limit_by_aicl, info->atm_enabled,
+		boot_mode);
 
 	charger_dev_set_input_current(info->chg1_dev,
 					pdata->input_current_limit);
@@ -401,12 +432,34 @@ static void swchg_turn_on_charging(struct charger_manager *info)
 {
 	struct switch_charging_alg_data *swchgalg = info->algorithm_data;
 	bool charging_enable = true;
+	
+	struct device *dev = NULL;
+	struct device_node *boot_node = NULL;
+	struct tag_bootmode *tag = NULL;
+	int boot_mode = 11;//UNKNOWN_BOOT
 
-	if (swchgalg->state == CHR_ERROR) {
+	dev = &(info->pdev->dev);
+	if (dev != NULL){
+		boot_node = of_parse_phandle(dev->of_node, "bootmode", 0);
+		if (!boot_node){
+			chr_err("%s: failed to get boot mode phandle\n", __func__);
+		}
+		else {
+			tag = (struct tag_bootmode *)of_get_property(boot_node,
+								"atag,boot", NULL);
+			if (!tag){
+				chr_err("%s: failed to get atag,boot\n", __func__);
+			}
+			else
+				boot_mode = tag->bootmode;
+		}
+	}
+
+    if (swchgalg->state == CHR_ERROR) {
 		charging_enable = false;
 		chr_err("[charger]Charger Error, turn OFF charging !\n");
-	} else if ((get_boot_mode() == META_BOOT) ||
-			((get_boot_mode() == ADVMETA_BOOT))) {
+	} else if ((boot_mode == META_BOOT) ||
+			((boot_mode == ADVMETA_BOOT))) {
 		charging_enable = false;
 		info->chg1_data.input_current_limit = 200000; /* 200mA */
 		charger_dev_set_input_current(info->chg1_dev,
