@@ -141,6 +141,8 @@ else
 	obj-y += mediatek/
 ifeq ($(CONFIG_AGATE_CHARGER),y)
 	obj-y += ti_agate/
+else ifeq ($(CONFIG_ARES_CHARGER),y)
+	obj-y += ti_ares/
 endif
 endif
 
