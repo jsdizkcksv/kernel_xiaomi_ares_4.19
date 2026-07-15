@@ -55,6 +55,13 @@
 
 #include "mtk_charger_intf.h"
 
+struct tag_bootmode {
+	u32 size;
+	u32 tag;
+	u32 bootmode;
+	u32 boottype;
+};
+
 #ifdef CONFIG_EXTCON_USB_CHG
 struct usb_extcon_info {
 	struct device *dev;
@@ -278,10 +285,29 @@ struct mt_charger {
 static int mt_charger_online(struct mt_charger *mtk_chg)
 {
 	int ret = 0;
-	int boot_mode = 0;
+	struct device *dev = NULL;
+	struct device_node *boot_node = NULL;
+	struct tag_bootmode *tag = NULL;
+	int boot_mode = 11;//UNKNOWN_BOOT
+
+	dev = mtk_chg->dev;
+	if (dev != NULL){
+		boot_node = of_parse_phandle(dev->of_node, "bootmode", 0);
+		if (!boot_node){
+			chr_err("%s: failed to get boot mode phandle\n", __func__);
+		}
+		else {
+			tag = (struct tag_bootmode *)of_get_property(boot_node,
+								"atag,boot", NULL);
+			if (!tag){
+				chr_err("%s: failed to get atag,boot\n", __func__);
+			}
+			else
+				boot_mode = tag->bootmode;
+		}
+	}
 
 	if (!mtk_chg->chg_online) {
-		boot_mode = get_boot_mode();
 		if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT ||
 		    boot_mode == LOW_POWER_OFF_CHARGING_BOOT) {
 			pr_notice("%s: Unplug Charger/USB\n", __func__);
@@ -1345,6 +1371,11 @@ static int mt_charger_probe(struct platform_device *pdev)
 	struct usb_extcon_info *info;
 	#endif
 
+	struct device *dev = NULL;
+	struct device_node *boot_node = NULL;
+	struct tag_bootmode *tag = NULL;
+	int boot_mode = 11;//UNKNOWN_BOOT
+
 	pr_info("%s\n", __func__);
 
 	mt_chg = devm_kzalloc(&pdev->dev, sizeof(*mt_chg), GFP_KERNEL);
@@ -1480,9 +1511,22 @@ static int mt_charger_probe(struct platform_device *pdev)
 		goto err_get_tcpc_dev;
 	}
 
-	ret = get_boot_mode();
-	if (ret == KERNEL_POWER_OFF_CHARGING_BOOT ||
-	    ret == LOW_POWER_OFF_CHARGING_BOOT)
+	dev = &(pdev->dev);
+	if (dev != NULL) {
+		boot_node = of_parse_phandle(dev->of_node, "bootmode", 0);
+		if (!boot_node) {
+			chr_err("%s: failed to get boot mode phandle\n", __func__);
+		} else {
+			tag = (struct tag_bootmode *)of_get_property(boot_node, "atag,boot", NULL);
+			if (!tag)
+				chr_err("%s: failed to get atag,boot\n", __func__);
+			else
+				boot_mode = tag->bootmode;
+		}
+	}
+
+	if (boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT ||
+	    boot_mode == LOW_POWER_OFF_CHARGING_BOOT)
 		cti->tcpc_kpoc = true;
 	pr_info("%s KPOC(%d)\n", __func__, cti->tcpc_kpoc);
 	mt_chg->fake_plug_in_out = 0;
