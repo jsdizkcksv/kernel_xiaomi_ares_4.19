@@ -203,9 +203,14 @@ obj-$(CONFIG_MFD_MT6360_PMU)    += mt6360/
 
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/pmic/include
+ifeq ($(CONFIG_AGATE_CHARGER),y)
 ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery_agate
+else ifeq ($(CONFIG_ARES_CHARGER),y)
+ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery_ares
+else
 ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
 obj-y += mtk_battery_adc_intf.o
+endif
 endif
 
 else ifeq ($(CONFIG_MACH_MT6785),y)

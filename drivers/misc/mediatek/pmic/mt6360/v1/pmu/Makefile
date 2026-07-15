@@ -1,7 +1,15 @@
 ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
+ifeq ($(CONFIG_AGATE_CHARGER),y)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc_agate/inc
 subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger_agate
+else ifeq ($(CONFIG_ARES_CHARGER),y)
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc_ares/inc
+subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger_ares
+else
+subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
+subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
 subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
+endif
 endif
 
 obj-$(CONFIG_MFD_MT6360_PMU)		+= mt6360_pmu_i2c.o mt6360_pmu_regmap.o\
