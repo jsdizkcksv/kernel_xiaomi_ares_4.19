@@ -26,6 +26,10 @@ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
 ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/inc
 ifeq ($(CONFIG_TCPC_CLASS),y)
 	ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc_agate/inc
+else ifeq ($(CONFIG_ARES_CHARGER),y)
+	ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc_ares/inc
+else
+	ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
 endif
 # for ep0 test
 ccflags-y += -I$(srctree)/drivers/usb/core/
