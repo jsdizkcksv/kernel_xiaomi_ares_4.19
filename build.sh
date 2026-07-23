@@ -32,22 +32,13 @@ make O=out ARCH=arm64 agate_defconfig
 
 PATH="${PWD}/clang/bin:${PATH}:${PWD}/clang/bin:${PATH}:${PWD}/clang/bin:${PATH}" \
 PATH="${PWD}/clang/bin:${PATH}:${PWD}/los-4.9-32/bin:${PATH}:${PWD}/los-4.9-64/bin:${PATH}" \
-make -j$(nproc --all) O=out \
-                      ARCH=arm64 \
-                      CC="clang" \
-		      LLVM=1 \
-		      LLVM_IAS=1 \
-                      CLANG_TRIPLE=aarch64-linux-gnu- \
-                      CROSS_COMPILE="${PWD}/los-4.9-64/bin/aarch64-linux-android-" \
-                      CROSS_COMPILE_ARM32="${PWD}/los-4.9-32/bin/arm-linux-androideabi-" \
-		      Image.gz \
-                       CONFIG_NO_ERROR_ON_MISMATCH=y 2>&1 | tee error.log 
+make -j$(nproc --all) CC=clang O=out ARCH=arm64 LLVM=1 LLVM_IAS=1 LD=ld.lld AS=llvm-as AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump READELF=llvm-readelf STRIP=llvm-strip CROSS_COMPILE="aarch64-linux-gnu" CROSS_COMPILE_ARM32="arm-linux-gnueabi-"  Image.gz CONFIG_NO_ERROR_ON_MISMATCH=y 2>&1 | tee error.log 
 }
 
 function zupload()
 {
     rm -rf AnyKernel    
-    git clone --depth=1 https://github.com/AbzRaider/AnyKernel33.git AnyKernel
+    git clone --depth=1 https://github.com/rio004/AnyKernel3.git AnyKernel
     cp out/arch/arm64/boot/Image.gz AnyKernel
     cd AnyKernel
     zip -r9 4.19.191-Test-OSS-KERNEL-$DEVICE-VIC.zip *
