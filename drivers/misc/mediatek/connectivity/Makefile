@@ -71,7 +71,7 @@ endif
 
 obj-$(CONFIG_MTK_COMBO) += conninfra/
 obj-$(CONFIG_MTK_COMBO_WIFI) += wlan/adaptor/
-obj-$(CONFIG_MTK_COMBO_CHIP_CONSYS_6877) += wlan/core/gen4m/
+obj-$(CONFIG_MTK_COMBO_CHIP_CONSYS_6893) += wlan/core/gen4m/
 obj-$(CONFIG_MTK_BTIF) += bt/mt66xx/btif/
 obj-$(CONFIG_MTK_COMBO_GPS) += gps/
 obj-$(CONFIG_MTK_FMRADIO) += fmradio/
