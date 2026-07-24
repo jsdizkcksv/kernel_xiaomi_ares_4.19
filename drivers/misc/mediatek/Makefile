@@ -1,4 +1,5 @@
 export MTK_PLATFORM := $(subst $(quote),,$(CONFIG_MTK_PLATFORM))
+export MTK_TARGET_PROJECT :=  $(subst $(quote),,$(CONFIG_TARGET_PRODUCT))
 subdir-ccflags-y := -Werror $(call cc-disable-warning, unused-but-set-variable)
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
 subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
