@@ -63,6 +63,7 @@ ifeq ($(CONFIG_WLAN_DRV_BUILD_IN),y)
     export WIFI_ECO_VER=1
     export MTK_WLAN_SERVICE=yes
     export CFG_BUILD_CONNAC2=true
+    export MTK_WLAN_SAR_PROJECT=$(MTK_TARGET_PROJECT)
 
 # Do build-in for xxx.c checking
 subdir-ccflags-y += -D MTK_WCN_REMOVE_KERNEL_MODULE
