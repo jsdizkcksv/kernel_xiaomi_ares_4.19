@@ -796,6 +796,4 @@
 	};
 };
 /* Audio End */
-
-#include <k6893v1_64_k419/cust.dtsi>
 /*End of this file, DO NOT ADD ANYTHING HERE*/

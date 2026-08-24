@@ -800,3 +800,5 @@ this file is only for attribution of ares
 		status = "okay";
 	};
 };
+
+#include "mediatek/ares/cust.dtsi"
