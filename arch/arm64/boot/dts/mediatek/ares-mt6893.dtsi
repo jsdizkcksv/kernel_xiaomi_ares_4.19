@@ -568,7 +568,6 @@ this file is only for attribution of ares
 		xm,xmusb350_scl_gpio = <&pio 204 0x00>;
 		mi,connect_therm = <&pio 29 0x00>;
 		bootmode = <&chosen>;
-		usb = <&ssusb>;
 		charger_name = "secondary_chg";
 		alias_name  = "xmusb350";
 		en_bc12;
