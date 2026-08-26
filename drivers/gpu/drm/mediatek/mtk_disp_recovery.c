@@ -300,6 +300,8 @@ done:
 	return ret;
 }
 
+static irqreturn_t _mi_esd_check_ext_te_irq_handler(int irq, void *data);
+
 #ifndef CONFIG_MI_ESD_CHECK
 static irqreturn_t _esd_check_ext_te_irq_handler(int irq, void *data)
 {
