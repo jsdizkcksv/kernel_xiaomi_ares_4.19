@@ -37,9 +37,6 @@
 	regulator-always-on;
 };
 
-&reserved_memory {
-};
-
 /* chosen */
 &chosen {
 

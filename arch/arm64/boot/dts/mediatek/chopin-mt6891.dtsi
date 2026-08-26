@@ -197,17 +197,6 @@ this file is only for attribution of chopin
 	use-ti-gauge;
 };
 
-&usb0phy {
-	usb_phy_tuning {
-		compatible = "mediatek,phy_tuning";
-		u2_vrt_ref  = <4>;
-		u2_term_ref = <4>;
-		u2_enhance  = <1>;
-		u2_intr_cal = <30>;
-		u2_discth  = <7>;
-	};
-};
-
 &odm {
 	thermal_message: thermal-message {
 		board-sensor = "VIRTUAL-SENSOR";
@@ -410,7 +399,7 @@ this file is only for attribution of chopin
 		xm,xmusb350_sda_gpio = <&pio 205 0x00>;
 		xm,xmusb350_scl_gpio = <&pio 204 0x00>;
 		mi,connect_therm = <&pio 29 0x00>;
-
+		bootmode = <&chosen>;
 		charger_name = "secondary_chg";
 		alias_name  = "xmusb350";
 		en_bc12;
