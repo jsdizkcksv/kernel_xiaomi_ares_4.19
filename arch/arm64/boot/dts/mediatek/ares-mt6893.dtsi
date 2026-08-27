@@ -11,18 +11,6 @@ this file is only for attribution of ares
 };
 
 /*TOUCH begin*/
-/*mt_pmic_vs1_buck_reg*/
-&mt6359regulator {
-	touch_avdd_i2c_vreg: touch_avdd_i2c_vreg {
-		compatible = "regulator-fixed";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		regulator-name = "touch_avdd_i2c_vreg";
-		enable-active-high;
-		gpio = <&pio 27 0>;
-	};
-};
-
 &pio {
 	ts_reset_active: ts_reset_active {
 		pins_cmd_dat {
@@ -102,7 +90,6 @@ this file is only for attribution of ares
 		pinctrl-2 = <&ts_release>;
 		pinctrl-3 = <&ts_spi_mode>;
 		vdd-supply = <&mt_pmic_vmch_ldo_reg>;
-		vcc_i2c-supply = <&touch_avdd_i2c_vreg>;
 		focaltech,reset-gpio = <&pio 20 0x00>;
 		focaltech,irq-gpio = <&pio 21 0x2008>;
 		focaltech,max-touch-number = <10>;
