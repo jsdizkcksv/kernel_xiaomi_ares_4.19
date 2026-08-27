@@ -191,6 +191,7 @@ obj-$(CONFIG_MTK_MDDP_SUPPORT) += mddp/
 obj-$(CONFIG_MTK_GATE_IC) += gate_ic/
 obj-$(CONFIG_MTK_FREQ_HOPPING) += freqhopping/
 obj-$(CONFIG_ARCH_MEDIATEK) += mboot_params/
+obj-$(CONFIG_MEDIATEK_COMMON_LEGACY) += mtk_boot.o
 
 subdir-ccflags-y += -D_XIAOMI_
 
