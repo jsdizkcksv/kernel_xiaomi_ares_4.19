@@ -23,6 +23,7 @@
 #include <linux/slab.h>
 #include <linux/tee_drv.h>
 #include <linux/uaccess.h>
+#include <linux/uuid.h>
 #include "tee_private.h"
 
 #define TEE_NUM_DEVICES	32
@@ -58,6 +59,11 @@ static int tee_open(struct inode *inode, struct file *filp)
 	kref_init(&ctx->refcount);
 	ctx->teedev = teedev;
 	INIT_LIST_HEAD(&ctx->list_shm);
+	/*
+	 * Default user-space behaviour is to wait for tee-supplicant
+	 * if not present for any requests in this context.
+	 */
+	ctx->supp_nowait = false;
 	filp->private_data = ctx;
 	rc = teedev->desc->ops->open(ctx);
 	if (rc)
@@ -101,6 +107,36 @@ static void teedev_close_context(struct tee_context *ctx)
 
 	teedev_ctx_put(ctx);
 	tee_device_put(teedev);
+}
+
+static struct tee_context *teedev_ctx_open(struct device *dev)
+{
+	struct tee_device *teedev = container_of(dev, struct tee_device, dev);
+	struct tee_context *ctx;
+	int rc;
+
+	if (!tee_device_get(teedev))
+		return ERR_PTR(-EINVAL);
+
+	ctx = kzalloc(sizeof(*ctx), GFP_KERNEL);
+	if (!ctx) {
+		tee_device_put(teedev);
+		return ERR_PTR(-ENOMEM);
+	}
+
+	kref_init(&ctx->refcount);
+	ctx->teedev = teedev;
+	INIT_LIST_HEAD(&ctx->list_shm);
+	ctx->supp_nowait = false;
+
+	rc = teedev->desc->ops->open(ctx);
+	if (rc) {
+		kfree(ctx);
+		tee_device_put(teedev);
+		return ERR_PTR(rc);
+	}
+
+	return ctx;
 }
 
 static int tee_release(struct inode *inode, struct file *filp)
@@ -935,6 +971,147 @@ void *tee_get_drvdata(struct tee_device *teedev)
 }
 EXPORT_SYMBOL_GPL(tee_get_drvdata);
 
+struct match_dev_data {
+	struct tee_ioctl_version_data *vers;
+	const void *data;
+	int (*match)(struct tee_ioctl_version_data *, const void *);
+};
+
+static int match_dev(struct device *dev, const void *data)
+{
+	const struct match_dev_data *match_data = data;
+	struct tee_device *teedev = container_of(dev, struct tee_device, dev);
+
+	teedev->desc->ops->get_version(teedev, match_data->vers);
+	return match_data->match(match_data->vers, match_data->data);
+}
+
+struct tee_context *
+mitee_client_open_context(struct tee_context *start,
+			int (*match)(struct tee_ioctl_version_data *,
+				     const void *),
+			const void *data, struct tee_ioctl_version_data *vers)
+{
+	struct device *dev = NULL;
+	struct device *put_dev = NULL;
+	struct tee_context *ctx = NULL;
+	struct tee_ioctl_version_data v;
+	struct match_dev_data match_data = { vers ? vers : &v, data, match };
+
+	if (start)
+		dev = &start->teedev->dev;
+
+	do {
+		dev = class_find_device(tee_class, dev, &match_data, match_dev);
+		if (!dev) {
+			ctx = ERR_PTR(-ENOENT);
+			break;
+		}
+
+		put_device(put_dev);
+		put_dev = dev;
+
+		ctx = teedev_ctx_open(dev);
+	} while (IS_ERR(ctx) && PTR_ERR(ctx) != -ENOMEM);
+
+	put_device(put_dev);
+	/*
+	 * Default behaviour for in kernel client is to not wait for
+	 * tee-supplicant if not present for any requests in this context.
+	 * Also this flag could be configured again before call to
+	 * mitee_client_open_session() if any in kernel client requires
+	 * different behaviour.
+	 */
+	if (!IS_ERR(ctx))
+		ctx->supp_nowait = true;
+
+	return ctx;
+}
+EXPORT_SYMBOL_GPL(mitee_client_open_context);
+
+void mitee_client_close_context(struct tee_context *ctx)
+{
+	teedev_close_context(ctx);
+}
+EXPORT_SYMBOL_GPL(mitee_client_close_context);
+
+void mitee_client_get_version(struct tee_context *ctx,
+			    struct tee_ioctl_version_data *vers)
+{
+	ctx->teedev->desc->ops->get_version(ctx->teedev, vers);
+}
+EXPORT_SYMBOL_GPL(mitee_client_get_version);
+
+int mitee_client_open_session(struct tee_context *ctx,
+			    struct tee_ioctl_open_session_arg *arg,
+			    struct tee_param *param)
+{
+	if (!ctx->teedev->desc->ops->open_session)
+		return -EINVAL;
+	return ctx->teedev->desc->ops->open_session(ctx, arg, param);
+}
+EXPORT_SYMBOL_GPL(mitee_client_open_session);
+
+int mitee_client_close_session(struct tee_context *ctx, u32 session)
+{
+	if (!ctx->teedev->desc->ops->close_session)
+		return -EINVAL;
+	return ctx->teedev->desc->ops->close_session(ctx, session);
+}
+EXPORT_SYMBOL_GPL(mitee_client_close_session);
+
+int mitee_client_invoke_func(struct tee_context *ctx,
+			   struct tee_ioctl_invoke_arg *arg,
+			   struct tee_param *param)
+{
+	if (!ctx->teedev->desc->ops->invoke_func)
+		return -EINVAL;
+	return ctx->teedev->desc->ops->invoke_func(ctx, arg, param);
+}
+EXPORT_SYMBOL_GPL(mitee_client_invoke_func);
+
+int tee_client_cancel_req(struct tee_context *ctx,
+			  struct tee_ioctl_cancel_arg *arg)
+{
+	if (!ctx->teedev->desc->ops->cancel_req)
+		return -EINVAL;
+	return ctx->teedev->desc->ops->cancel_req(ctx, arg->cancel_id,
+						  arg->session);
+}
+
+static int tee_client_device_match(struct device *dev,
+				   struct device_driver *drv)
+{
+	const struct tee_client_device_id *id_table;
+	struct tee_client_device *tee_device;
+
+	id_table = to_tee_client_driver(drv)->id_table;
+	tee_device = to_tee_client_device(dev);
+
+	while (!uuid_is_null(&id_table->uuid)) {
+		if (uuid_equal(&tee_device->id.uuid, &id_table->uuid))
+			return 1;
+		id_table++;
+	}
+
+	return 0;
+}
+
+static int tee_client_device_uevent(struct device *dev,
+				    struct kobj_uevent_env *env)
+{
+	uuid_t *dev_id = &to_tee_client_device(dev)->id.uuid;
+
+	return add_uevent_var(env, "MODALIAS=tee:%pUb", dev_id);
+}
+
+struct bus_type tee_bus_type = {
+	.name		= "tee",
+	.match		= tee_client_device_match,
+	.uevent		= tee_client_device_uevent,
+};
+EXPORT_SYMBOL_GPL(tee_bus_type);
+
 static int __init tee_init(void)
 {
 	int rc;
@@ -952,11 +1129,20 @@ static int __init tee_init(void)
 		tee_class = NULL;
 	}
 
+	rc = bus_register(&tee_bus_type);
+	if (rc) {
+		pr_err("failed to register tee bus\n");
+		unregister_chrdev_region(tee_devt, TEE_NUM_DEVICES);
+		class_destroy(tee_class);
+		tee_class = NULL;
+	}
+
 	return rc;
 }
 
 static void __exit tee_exit(void)
 {
+	bus_unregister(&tee_bus_type);
 	class_destroy(tee_class);
 	tee_class = NULL;
 	unregister_chrdev_region(tee_devt, TEE_NUM_DEVICES);
