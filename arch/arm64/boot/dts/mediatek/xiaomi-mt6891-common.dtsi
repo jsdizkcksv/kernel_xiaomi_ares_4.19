@@ -19,24 +19,6 @@
 #include <dt-bindings/spmi/spmi.h>
 #include <dt-bindings/pinctrl/mt6885-pinfunc.h>
 
-&mmc_fixed_3v3 {
-	status = "okay";
-	regulator-name = "mmc_power";
-	regulator-min-microvolt = <3300000>;
-	regulator-max-microvolt = <3300000>;
-	enable-active-high;
-	regulator-always-on;
-};
-
-&mmc_fixed_1v8_io {
-	status = "okay";
-	regulator-name = "mmc_io";
-	regulator-min-microvolt = <1800000>;
-	regulator-max-microvolt = <1800000>;
-	enable-active-high;
-	regulator-always-on;
-};
-
 /* chosen */
 &chosen {
 
@@ -48,21 +30,6 @@
 	atag,videolfb-vramSize= <0x1be0000>;
 	atag,videolfb-lcmname=
 		"nt35595_fhd_dsi_cmd_truly_nt50358_drv";
-};
-
-&mmc0 {
-	status = "okay";
-	/* pinctrl-names = "default", "state_uhs"; */
-	/* pinctrl-0 = <&mmc0_pins_default>; */
-	/* pinctrl-1 = <&mmc0_pins_uhs>; */
-	bus-width = <8>;
-	max-frequency = <5000000>;
-	cap-mmc-highspeed;
-	no-sdio;
-	no-sd;
-	vmmc-supply = <&mmc_fixed_3v3>;
-	vqmmc-supply = <&mmc_fixed_1v8_io>;
-	non-removable;
 };
 
 &odm {
@@ -135,6 +102,46 @@
 			slew-rate = <1>;
 			bias-disable;
 			output-high;
+		};
+	};
+
+	nfc_default: nfc_default {
+	};
+
+	nfc_int_active: nfc_int_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
+			slew-rate = <0>;
+			drive-strength = <MTK_DRIVE_2mA>;
+			bias-pull-up;
+		};
+	};
+
+	nfc_int_suspend: nfc_int_suspend {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
+			slew-rate = <0>;
+			drive-strength = <MTK_DRIVE_2mA>;
+			bias-pull-up;
+		};
+	};
+
+	nfc_enable_active: nfc_enable_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO10__FUNC_GPIO10>;
+			slew-rate = <1>;
+			output-high;
+			drive-strength = <MTK_DRIVE_2mA>;
+			bias-pull-up = <MTK_PUPD_SET_R1R0_11>;
+		};
+	};
+
+	nfc_enable_suspend: nfc_enable_suspend {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO10__FUNC_GPIO10>;
+			slew-rate = <1>;
+			drive-strength = <MTK_DRIVE_2mA>;
+			bias-disable;
 		};
 	};
 };
