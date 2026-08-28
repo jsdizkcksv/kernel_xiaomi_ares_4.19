@@ -116,24 +116,6 @@ static irqreturn_t ccu_isr_callback_xxx(int irq, void *device_id)
 	return IRQ_HANDLED;
 }
 
-static uint32_t get_checksum(uint8_t *data, uint32_t size)
-{
-	uint32_t i, val, tv, sz, *ptr;
-
-	if (!data)
-		return 0;
-
-	sz = size >> 2;
-	ptr = (uint32_t *)data;
-	for (i = 0, val = 0; i < sz; ++i)
-		val += ptr[i];
-	for (i = size & ~3, tv = 0; i < size; ++i)
-		tv += ((uint32_t)(data[i])) << ((i & 3) << 3);
-	val = (val + tv) ^ CCU_MAGIC_CHK;
-
-	return val;
-}
-
 #ifdef CONFIG_MTK_QOS_SUPPORT_ENABLE
 static struct mtk_pm_qos_request _ccu_qos_request;
 static u64 _g_freq_steps[MAX_FREQ_STEP];
@@ -851,6 +833,15 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 		break;
 	}
 
+	case CCU_READ_REGISTER:
+	{
+		int regToRead = (int)arg;
+		int rc = ccu_read_info_reg(regToRead);
+
+		mutex_unlock(&g_ccu_device->dev_mutex);
+		return rc;
+	}
+
 	case CCU_READ_STRUCT_SIZE:
 	{
 		uint32_t structCnt;
@@ -990,7 +981,6 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 	case CCU_IOCTL_ALLOC_MEM:
 	{
 		struct CcuMemHandle handle;
-		uint32_t cs;
 
 		handle.ionHandleKd = 0;
 		ret = copy_from_user(&(handle.meminfo),
@@ -999,13 +989,6 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 			LOG_ERR(
 			"CCU_IOCTL_ALLOC_MEM copy_to_user failed: %d\n",
 			ret);
-			break;
-		}
-
-		cs = get_checksum((uint8_t *)&(handle.meminfo.shareFd),
-			sizeof(struct CcuMemInfo) - sizeof(unsigned int));
-		if (cs != handle.meminfo.chksum) {
-			ret = -EINVAL;
 			break;
 		}
 
@@ -1023,7 +1006,6 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 	case CCU_IOCTL_DEALLOC_MEM:
 	{
 		struct CcuMemHandle handle;
-		uint32_t cs;
 
 		ret = copy_from_user(&(handle.meminfo),
 			(void *)arg, sizeof(struct CcuMemInfo));
@@ -1031,13 +1013,6 @@ static long ccu_ioctl(struct file *flip, unsigned int cmd,
 			LOG_ERR(
 			"CCU_IOCTL_ALLOC_MEM copy_to_user failed: %d\n",
 			ret);
-			break;
-		}
-
-		cs = get_checksum((uint8_t *)&(handle.meminfo.shareFd),
-				sizeof(struct CcuMemInfo) - sizeof(unsigned int));
-		if (cs != handle.meminfo.chksum) {
-			ret = -EINVAL;
 			break;
 		}
 
