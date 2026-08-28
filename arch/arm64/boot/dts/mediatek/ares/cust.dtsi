@@ -58,14 +58,14 @@
 	#size-cells = <0>;
 	clock-frequency = <400000>;
 	mediatek,use-open-drain;
-	camera_main_two_mtk:camera_main_two@10 {
-		compatible = "mediatek,camera_main_two";
+	camera_main_mtk:camera_main@10 {
+		compatible = "mediatek,camera_main";
 		reg = <0x10>;
 		status = "okay";
 	};
 
-	camera_main_two_af_mtk:camera_main_two_af@0c {
-		compatible = "mediatek,camera_main_two_af";
+	camera_main_af_mtk:camera_main_af@0c {
+		compatible = "mediatek,camera_main_af";
 		reg = <0x0c>;
 		status = "okay";
 	};
@@ -84,9 +84,9 @@
 	#size-cells = <0>;
 	clock-frequency = <400000>;
 	mediatek,use-open-drain;
-	camera_sub_mtk:camera_sub@1a {
+	camera_sub_mtk:camera_sub@10 {
 		compatible = "mediatek,camera_sub";
-		reg = <0x1a>;
+		reg = <0x10>;
 		status = "okay";
 	};
 
@@ -166,15 +166,21 @@
 	#size-cells = <0>;
 	clock-frequency = <400000>;
 	mediatek,use-open-drain;
-	camera_main_mtk:camera_main@1a {
-		compatible = "mediatek,camera_main";
-		reg = <0x1a>;
+	camera_main_two_mtk:camera_main_two@37 {
+		compatible = "mediatek,camera_main_two";
+		reg = <0x37>;
 		status = "okay";
 	};
 
-	camera_main_af_mtk:camera_main_af@72 {
-		compatible = "mediatek,camera_main_af";
-		reg = <0x72>;
+	camera_main_two_af_mtk:camera_main_two_af@0c {
+		compatible = "mediatek,camera_main_two_af";
+		reg = <0x0c>;
+		status = "okay";
+	};
+
+	camera_sub_two_mtk:camera_sub_two@1a {
+		compatible = "mediatek,camera_sub_two";
+		reg = <0x1a>;
 		status = "okay";
 	};
 
@@ -185,12 +191,6 @@
 	#size-cells = <0>;
 	clock-frequency = <400000>;
 	mediatek,use-open-drain;
-	camera_main_three_mtk:camera_main_three@10 {
-		compatible = "mediatek,camera_main_three";
-		reg = <0x10>;
-		status = "okay";
-	};
-
 	camera_main_three_af_mtk:camera_main_three_af@0c {
 		compatible = "mediatek,camera_main_three_af";
 		reg = <0x0c>;
