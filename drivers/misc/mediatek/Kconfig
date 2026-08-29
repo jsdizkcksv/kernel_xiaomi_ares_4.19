@@ -483,6 +483,12 @@ config MTK_MT6382_BDG
 	  Normal project will disable it first
 	  If you are not sure about this, do not set it to y
 
+config MEDIATEK_COMMON_LEGACY
+    bool "Compatibility support for older Mediatek blobs"
+    depends on ARCH_MEDIATEK
+    help
+      Say Y here to enable legacy UAPI/ABI compatibility for older proprietary Mediatek blobs.
+
 source "drivers/misc/mediatek/slbc/Kconfig"
 source "drivers/misc/mediatek/cm_mgr/Kconfig"
 source "drivers/misc/mediatek/dramc/Kconfig"
