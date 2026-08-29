@@ -522,6 +522,13 @@ bool is_usb_rdy(struct device *dev)
 	bool ready = false;
 
 	node = of_parse_phandle(dev->of_node, "usb", 0);
+#if CONFIG_MEDIATEK_COMMON_LEGACY
+	if (!node)
+		/* ares main dtb (embedded in lk-ares.img) has no ssusb symbol,
+		 * fall back to the mtu3 node found by compatible string.
+		 */
+		node = of_find_compatible_node(NULL, NULL, "mediatek,mtu3");
+#endif
 	if (node) {
 		ready = of_property_read_bool(node, "gadget-ready");
 		dev_info(dev, "gadget-ready=%d\n", ready);
