@@ -1319,8 +1319,14 @@ static int mtk_dsp_pcm_hw_params(struct snd_pcm_substream *substream,
 	/* send to task with hw_param information , buffer and pcm attribute */
 	mtk_scp_ipi_send(get_dspscene_by_dspdaiid(id), AUDIO_IPI_PAYLOAD,
 			 AUDIO_IPI_MSG_NEED_ACK, AUDIO_DSP_TASK_HWPARAM,
+#if CONFIG_MTK_AUDIODSP_LEGACY
+			 sizeof(unsigned int),
+			 (unsigned int)
+			 dsp->dsp_mem[id].msg_atod_share_buf.phy_addr,
+#else
 			 sizeof(dsp->dsp_mem[id].msg_atod_share_buf.phy_addr),
 			 0,
+#endif
 			 (char *)&dsp->dsp_mem[id].msg_atod_share_buf.phy_addr);
 
 	return ret;
@@ -1417,8 +1423,14 @@ static int mtk_dsp_pcm_hw_prepare(struct snd_pcm_substream *substream)
 	/* send to task with prepare status */
 	mtk_scp_ipi_send(get_dspscene_by_dspdaiid(id), AUDIO_IPI_PAYLOAD,
 			 AUDIO_IPI_MSG_NEED_ACK, AUDIO_DSP_TASK_PREPARE,
+#if CONFIG_MTK_AUDIODSP_LEGACY
+			  sizeof(unsigned int),
+			 (unsigned int)
+			 dsp->dsp_mem[id].msg_atod_share_buf.phy_addr,
+#else
 			 sizeof(dsp->dsp_mem[id].msg_atod_share_buf.phy_addr),
 			 0,
+#endif
 			 (char *)&dsp->dsp_mem[id].msg_atod_share_buf.phy_addr);
 	return ret;
 }
@@ -1554,8 +1566,14 @@ static int mtk_dsp_pcm_copy_dl(struct snd_pcm_substream *substream,
 	ret = mtk_scp_ipi_send(
 			get_dspscene_by_dspdaiid(id), AUDIO_IPI_PAYLOAD,
 			ack_type, AUDIO_DSP_TASK_DLCOPY,
+#if CONFIG_MTK_AUDIODSP_LEGACY
+			sizeof(unsigned int),
+			(unsigned int)
+			dsp_mem->msg_atod_share_buf.phy_addr,
+#else
 			sizeof(dsp_mem->msg_atod_share_buf.phy_addr),
 			0,
+#endif
 			(char *)&dsp_mem->msg_atod_share_buf.phy_addr);
 
 	return ret;
@@ -1608,8 +1626,14 @@ static int mtk_dsp_pcm_copy_ul(struct snd_pcm_substream *substream,
 	ret = mtk_scp_ipi_send(
 			get_dspscene_by_dspdaiid(id), AUDIO_IPI_PAYLOAD,
 			AUDIO_IPI_MSG_NEED_ACK, AUDIO_DSP_TASK_ULCOPY,
+#if CONFIG_MTK_AUDIODSP_LEGACY
+			sizeof(unsigned int),
+			(unsigned int)
+			dsp_mem->msg_atod_share_buf.phy_addr,
+#else
 			sizeof(dsp_mem->msg_atod_share_buf.phy_addr),
 			0,
+#endif
 			(char *)&dsp_mem->msg_atod_share_buf.phy_addr);
 
 #ifdef DEBUG_VERBOSE

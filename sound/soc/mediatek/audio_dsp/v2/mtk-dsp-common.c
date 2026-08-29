@@ -394,8 +394,14 @@ int afe_pcm_ipi_to_dsp(int command, struct snd_pcm_substream *substream,
 				 AUDIO_IPI_PAYLOAD,
 				 AUDIO_IPI_MSG_NEED_ACK,
 				 AUDIO_DSP_TASK_PCM_HWPARAM,
+#if CONFIG_MTK_AUDIODSP_LEGACY
+				 sizeof(unsigned int),
+				 (unsigned int)
+				 dsp_memif->msg_atod_share_buf.phy_addr,
+#else
 				 sizeof(dsp_memif->msg_atod_share_buf.phy_addr),
 				 0,
+#endif
 				 (char *)
 				 &dsp_memif->msg_atod_share_buf.phy_addr);
 		break;
@@ -422,8 +428,14 @@ int afe_pcm_ipi_to_dsp(int command, struct snd_pcm_substream *substream,
 				       AUDIO_IPI_PAYLOAD,
 				       AUDIO_IPI_MSG_NEED_ACK,
 				       AUDIO_DSP_TASK_PCM_PREPARE,
+#if CONFIG_MTK_AUDIODSP_LEGACY
+				       sizeof(unsigned int),
+				       (unsigned int)
+				       dsp_memif->msg_atod_share_buf.phy_addr,
+#else
 				       sizeof(dsp_memif->msg_atod_share_buf.phy_addr),
 				       0,
+#endif
 				       (char *)
 				       &dsp_memif->msg_atod_share_buf.phy_addr);
 		break;
