@@ -472,7 +472,11 @@ static int mtu3_probe(struct platform_device *pdev)
 		return -ENOTSUPP;
 	}
 
+#if CONFIG_MEDIATEK_COMMON_LEGACY
+	ret = device_rename(dev, "musb-hdrc");
+#else
 	ret = device_rename(dev, node->name);
+#endif
 	if (ret)
 		dev_info(&pdev->dev, "failed to rename\n");
 	/* fix uaf(use after free) issue: backup pdev->name,
