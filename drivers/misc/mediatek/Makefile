@@ -194,11 +194,11 @@ obj-$(CONFIG_MEDIATEK_COMMON_LEGACY) += mtk_boot.o
 
 subdir-ccflags-y += -D_XIAOMI_
 
-ifeq ($(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES),"mediatek/ares")
+ifeq ($(CONFIG_BUILD_XIAOMI_CAMERA_IMAGE_NAMES),"mediatek/ares")
 subdir-ccflags-y += -D_XIAOMI_ARES_
 endif
 
-ifeq ($(CONFIG_BUILD_ARM64_APPENDED_DTB_IMAGE_NAMES),"mediatek/chopin")
+ifeq ($(CONFIG_BUILD_XIAOMI_CAMERA_IMAGE_NAMES),"mediatek/chopin")
 subdir-ccflags-y += -D_XIAOMI_CHOPIN_
 endif
 
