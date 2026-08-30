@@ -8651,6 +8651,52 @@ page_owner=on loop.max_part=7";
 	};
 };
 
+/* ST54H SPI configuration */
+&spi5 {
+    st54spi@0 {
+            compatible = "st,st54spi";
+            reg = <0>;
+            spi-max-frequency = <5000000> ;
+            /* gpio used as SE_PWR_REQ or SE_nRESET */
+            gpio-power_nreset = <13>;
+            gpio-power_nreset-std = <&pio 13 0x0>;
+            /* Power management mode: none, ST54H (default), ST54J */
+            power_mode = "ST54H";
+            pinctrl-names = "pinctrl_state_mode_idle", "pinctrl_state_mode_spi";
+            pinctrl-0 = <&pinctrl_state_mode_idle>;
+            pinctrl-1 = <&pinctrl_state_mode_spi>;
+            status = "okay";
+        };
+};
+
+&pio {
+        pinctrl_state_mode_idle: pinctrl_state_mode_idle {
+        pins_cmd0_dat {
+            pinmux = <PINMUX_GPIO37__FUNC_GPIO37>;
+            input-enable;
+            bias-pull-down;
+            };
+        pins_cmd1_dat {
+            pinmux = <PINMUX_GPIO39__FUNC_GPIO39>;
+            input-enable;
+            bias-pull-down;
+            };
+
+        };
+        pinctrl_state_mode_spi: pinctrl_state_mode_spi {
+            pins_cmd0_dat {
+                pinmux = <PINMUX_GPIO37__FUNC_SPI5_A_CSB>;
+                bias-disable;
+            };
+            pins_cmd1_dat {
+                pinmux = <PINMUX_GPIO39__FUNC_SPI5_A_MO>;
+                bias-disable;
+            };
+        };
+};
+
+/* ST54H SPI configuration -- end */
+
 &pio {
 	aud_clk_mosi_off: aud_clk_mosi_off {
 		pins_cmd0_dat {
