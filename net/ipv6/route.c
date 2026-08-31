@@ -3507,18 +3507,6 @@ int fib6_nh_init(struct net *net, struct fib6_nh *fib6_nh,
 	if (!dev)
 		goto out;
 
-	if (!idev || idev->cnf.disable_ipv6) {
-		NL_SET_ERR_MSG(extack, "IPv6 is disabled on nexthop device");
-		err = -EACCES;
-		goto out;
-	}
-
-	if (!(dev->flags & IFF_UP) && !cfg->fc_ignore_dev_down) {
-		NL_SET_ERR_MSG(extack, "Nexthop device is not up");
-		err = -ENETDOWN;
-		goto out;
-	}
-
 	if (!(cfg->fc_flags & (RTF_LOCAL | RTF_ANYCAST)) &&
 	    !netif_carrier_ok(dev))
 		fib6_nh->fib_nh_flags |= RTNH_F_LINKDOWN;
@@ -5687,7 +5675,6 @@ static int rt6_fill_node(struct net *net, struct sk_buff *skb,
 	if (nla_put_u8(skb, RTA_PREF, IPV6_EXTRACT_PREF(rt6_flags)))
 		goto nla_put_failure;
 
-
 	nlmsg_end(skb, nlh);
 	return 0;
 
@@ -6019,7 +6006,6 @@ static int inet6_rtm_getroute(struct sk_buff *in_skb, struct nlmsghdr *nlh,
 
 		dst = ip6_route_output(net, NULL, &fl6);
 	}
-
 
 	rt = container_of(dst, struct rt6_info, dst);
 	if (rt->dst.error) {
