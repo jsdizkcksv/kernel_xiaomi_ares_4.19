@@ -783,6 +783,7 @@ EXPORT_SYMBOL(clk_buf_ctrl_combine);
 bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 {
 	short ret = 0, no_lock = 0;
+	int pwrap_dcxo_en;
 
 	if (!is_clkbuf_initiated)
 		return false;
@@ -826,6 +827,25 @@ bool clk_buf_ctrl(enum clk_buf_id id, bool onoff)
 				__func__, id);
 			break;
 		}
+		if (pwrap_inf == INF_DCXO) {
+			pwrap_dcxo_en = clkbuf_readl(PMIFSPI_OTHER_INF_EN)
+					& ~DCXO_NFC_ENABLE;
+			clkbuf_writel(PMIFSPI_OTHER_INF_EN, pwrap_dcxo_en);
+		}
+		pmic_config_interface(PMIC_DCXO_CW00_CLR,
+			PMIC_XO_EXTBUF3_MODE_MASK,
+			PMIC_XO_EXTBUF3_MODE_MASK,
+			PMIC_XO_EXTBUF3_MODE_SHIFT);
+		if (onoff)
+			pmic_config_interface(PMIC_DCXO_CW00_SET,
+				PMIC_XO_EXTBUF3_EN_M_MASK,
+				PMIC_XO_EXTBUF3_EN_M_MASK,
+				PMIC_XO_EXTBUF3_EN_M_SHIFT);
+		else
+			pmic_config_interface(PMIC_DCXO_CW00_CLR,
+				PMIC_XO_EXTBUF3_EN_M_MASK,
+				PMIC_XO_EXTBUF3_EN_M_MASK,
+				PMIC_XO_EXTBUF3_EN_M_SHIFT);
 		/* record the status of NFC from caller for checking BBLPM */
 		pmic_clk_buf_swctrl[XO_NFC] = onoff;
 		break;
