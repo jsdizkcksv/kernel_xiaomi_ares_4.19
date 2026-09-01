@@ -1386,6 +1386,11 @@ static int st21nfc_probe(struct i2c_client *client,
 		client->irq = irq_of_parse_and_map(np, 0);
 		pr_info("%s : MT IRQ GPIO = %d\n", __func__, client->irq);
 	}
+	/* fallback: irq_nfc-eint node without interrupts -> use GPIO IRQ */
+	if (!client->irq) {
+		client->irq = gpiod_to_irq(st21nfc_dev->gpiod_irq);
+		pr_info("%s : FALLBACK IRQ GPIO = %d\n", __func__, client->irq);
+	}
 
 	/* I2C retry management: we want only 1 attempt at communication.
 	   As some busses need retry=1 and most need retry=0, we add optional DTS entry */
