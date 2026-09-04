@@ -8356,6 +8356,7 @@ page_owner=on loop.max_part=7";
 	/* NFC start */
 	nfc:nfc {
 		compatible = "mediatek,nfc-gpio-v2";
+		reg = <0x08>;
 		gpio-rst = <10>;
 		gpio-rst-std = <&pio 10 0x0>;
 		gpio-irq = <11>;
@@ -8940,7 +8941,47 @@ page_owner=on loop.max_part=7";
 	};
 	aud_gpio_i2s9_on: aud_gpio_i2s9_on {
 	};
+
+	nfc_default: nfc_default {
+	};
+	nfc_int_active: nfc_int_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
+			slew-rate = <0>;
+			drive-strength = <MTK_DRIVE_2mA>;
+			bias-pull-up;
+		};
+	};
+
+	nfc_int_suspend: nfc_int_suspend {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO11__FUNC_GPIO11>;
+			slew-rate = <0>;
+			drive-strength = <MTK_DRIVE_2mA>;
+			bias-pull-up;
+		};
+	};
+
+	nfc_enable_active: nfc_enable_active {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO10__FUNC_GPIO10>;
+			slew-rate = <1>;
+			output-high;
+			drive-strength = <MTK_DRIVE_2mA>;
+			bias-pull-up=<MTK_PUPD_SET_R1R0_11>;
+		};
+	};
+
+	nfc_enable_suspend: nfc_enable_suspend {
+		pins_cmd_dat {
+			pinmux = <PINMUX_GPIO10__FUNC_GPIO10>;
+			slew-rate = <1>;
+			drive-strength = <MTK_DRIVE_2mA>;
+			bias-disable;
+		};
+	};
 };
+
 
 #include "mediatek/mt6315_s6.dtsi"
 #include "mediatek/mt6315_s7.dtsi"

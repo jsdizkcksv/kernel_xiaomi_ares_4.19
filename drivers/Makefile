@@ -72,6 +72,7 @@ obj-$(CONFIG_NVM)		+= lightnvm/
 obj-$(CONFIG_SPI)               += spi/
 obj-$(CONFIG_MEMORY)		+= memory/
 obj-y				+= base/ block/ misc/ mfd/ nfc/
+obj-$(CONFIG_NXP_P73_DEVICES)	+= p73-spi/
 obj-$(CONFIG_LIBNVDIMM)		+= nvdimm/
 obj-$(CONFIG_DAX)		+= dax/
 obj-$(CONFIG_DMA_SHARED_BUFFER) += dma-buf/

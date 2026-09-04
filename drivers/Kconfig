@@ -215,6 +215,10 @@ source "drivers/tee/Kconfig"
 
 source "drivers/mux/Kconfig"
 
+source "drivers/nfc/Kconfig"
+
+source "drivers/p73-spi/Kconfig"
+
 source "drivers/opp/Kconfig"
 
 source "drivers/visorbus/Kconfig"
