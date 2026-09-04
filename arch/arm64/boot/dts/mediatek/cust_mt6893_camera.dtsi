@@ -617,6 +617,7 @@
 /* CAMERA AF start */
 &camera_af_hw_node {
 	vcamwaf-supply = <&wl2866d1_avdd2>;
+	camaf_m1_pmic-supply = <&wl2866d1_avdd2>;
 	status = "okay";
 };
 /* CAMERA AF end */
