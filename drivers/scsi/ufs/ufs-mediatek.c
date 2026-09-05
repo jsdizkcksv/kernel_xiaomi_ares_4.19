@@ -2004,6 +2004,22 @@ static int ufs_mtk_probe(struct platform_device *pdev)
 	if (err)
 		dev_info(dev, "probe failed %d\n", err);
 
+	/*
+	 * UFS-only boards have no eMMC, so the msdc driver never
+	 * renames mmc0's parent to "bootdevice". Rename the UFS
+	 * platform device instead so ueventd can create
+	 * /dev/block/platform/bootdevice and by-name paths used
+	 * by init (e.g. cust partition) resolve without timeout.
+	 */
+	if (!err) {
+		/* fix uaf issue: backup pdev->name, device_rename frees it */
+		pdev->name = kstrdup(pdev->name, GFP_KERNEL);
+		if (!device_rename(dev, "bootdevice"))
+			pr_notice("[ufs] device renamed to bootdevice.\n");
+		else
+			pr_notice("[ufs] error: device renamed failed.\n");
+	}
+
 	return err;
 }
 

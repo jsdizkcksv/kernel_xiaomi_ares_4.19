@@ -156,10 +156,10 @@ this file is only for attribution of ares
 &odm {
 	testing-mode {
 		compatible = "modem,testing-mode";
-		status-gpio = <&pio 56 0>, <&pio 194 0>;
+		status-gpio = <&pio 56 0>;
 		debounce-time = <30>;
 		pinctrl-names = "default";
-		pinctrl-0 = <&test_mode_irq56 &test_mode_irq194>;
+		pinctrl-0 = <&test_mode_irq56>;
 	};
 };
 &pio {
@@ -171,14 +171,6 @@ this file is only for attribution of ares
 			input-enable;
 		};
 	};
-    test_mode_irq194: test_mode_irq194 {
-        	pins_cmd_dat {
-			pinmux = <PINMUX_GPIO194__FUNC_GPIO194>;
-			drive-strength = <2>;
-			bias-disable;
-			input-enable;
-		};
-    };
 };
 
 &i2c7 {
