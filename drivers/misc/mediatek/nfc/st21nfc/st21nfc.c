@@ -1203,8 +1203,15 @@ static int st21nfc_probe(struct i2c_client *client,
 
 	np = of_find_compatible_node(NULL, NULL, "mediatek,irq_nfc-eint");
 	if (np) {
-		client->irq = irq_of_parse_and_map(np, 0);
+		int irq = irq_of_parse_and_map(np, 0);
+		if (irq)
+			client->irq = irq;
 		pr_info("%s : MT IRQ GPIO = %d\n", __func__, client->irq);
+	}
+	/* fallback: keep i2c-core parsed IRQ, else use GPIO IRQ */
+	if (!client->irq && !IS_ERR_OR_NULL(st21nfc_dev->gpiod_irq)) {
+		client->irq = gpiod_to_irq(st21nfc_dev->gpiod_irq);
+		pr_info("%s : FALLBACK IRQ GPIO = %d\n", __func__, client->irq);
 	}
 
 	/* init mutex and queues */
