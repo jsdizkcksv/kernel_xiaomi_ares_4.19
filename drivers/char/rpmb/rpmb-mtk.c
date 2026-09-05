@@ -135,6 +135,7 @@ do {\
 #define RPMB_DATA_BUFF_SIZE (1024 * 24)
 #define RPMB_ONE_FRAME_SIZE (512)
 static unsigned char *rpmb_buffer;
+bool use_mitee = true;
 #endif
 
 struct task_struct *open_th;
@@ -2790,6 +2791,7 @@ long rpmb_ioctl_ufs(struct file *file, unsigned int cmd, unsigned long arg)
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
 	if ((cmd == RPMB_IOCTL_SOTER_WRITE_DATA) ||
 		(cmd == RPMB_IOCTL_SOTER_READ_DATA) ||
+		((cmd == RPMB_IOCTL_SOTER_GET_CNT) && use_mitee) ||
 		(cmd == RPMB_IOCTL_SOTER_SET_KEY)) {
 		if (rpmb_buffer == NULL) {
 			MSG(ERR, "%s, rpmb_buffer is NULL!\n", __func__);
@@ -2932,7 +2934,10 @@ long rpmb_ioctl_ufs(struct file *file, unsigned int cmd, unsigned long arg)
 
 		MSG(DBG_INFO, "%s, cmd = RPMB_IOCTL_SOTER_GET_CNT\n", __func__);
 
-		err = rpmb_req_get_wc_ufs(NULL, &arg_k, NULL);
+		if (use_mitee)
+			err = rpmb_req_get_wc_ufs(NULL, NULL, rpmbinfor.data_frame);
+		else
+			err = rpmb_req_get_wc_ufs(NULL, &arg_k, NULL);
 		if (err) {
 			MSG(ERR,
 	"%s, Microtrust get rpmb write counter failed, error code (%x)\n",
@@ -2940,7 +2945,10 @@ long rpmb_ioctl_ufs(struct file *file, unsigned int cmd, unsigned long arg)
 			return err;
 		}
 
-		err = copy_to_user((void *)arg, &arg_k, sizeof(u32));
+		if (use_mitee)
+			err = copy_to_user((void *)arg, rpmb_buffer, 4 + rpmbinfor.size);
+		else
+			err = copy_to_user((void *)arg, &arg_k, sizeof(u32));
 
 		if (err) {
 			MSG(ERR, "%s, copy_to_user failed: %x\n",
@@ -3444,6 +3452,19 @@ static int __init rpmb_init(void)
 #endif
 
 #if (defined(CONFIG_MICROTRUST_TEE_SUPPORT))
+	{
+		char mode = 0;
+		char *ptr = NULL;
+
+		ptr = strstr(saved_command_line, "androidboot.tee_type=");
+		if (ptr) {
+			mode = *(ptr + strlen("androidboot.tee_type="));
+			use_mitee = (mode == '1' ? true : false);
+		} else {
+			use_mitee = true;
+		}
+		MSG(INFO, "%s, use_mitee is %d\n", __func__, use_mitee);
+	}
 	rpmb_buffer = kzalloc(RPMB_DATA_BUFF_SIZE, 0);
 	if (rpmb_buffer == NULL) {
 		MSG(ERR, "%s, rpmb kzalloc memory fail!!!\n", __func__);
