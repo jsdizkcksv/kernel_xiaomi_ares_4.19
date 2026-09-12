@@ -1603,9 +1603,57 @@ static int mt_charger_remove(struct platform_device *pdev)
 }
 
 #ifdef CONFIG_PM_SLEEP
+/*
+ * These four supplies only change on a cable or Type-C event, and every
+ * power_supply_changed() call ends up doing pm_stay_awake(&psy->dev) plus a
+ * KOBJ_CHANGE uevent. Re-notifying all of them on each resume therefore
+ * pushed four extra wakeup events and four extra uevents into every suspend
+ * cycle, which stretched the wakeup window. Snapshot the reported state on
+ * the way down and only re-notify when it really changed.
+ */
+struct mt_charger_wake_state {
+	enum charger_type chg_type;
+	bool chg_online;
+	bool input_suspend;
+	bool pd_online;
+};
+
+static struct mt_charger_wake_state mt_charger_wake_state;
+static bool mt_charger_wake_state_valid;
+
+static void mt_charger_snapshot_state(struct mt_charger *mt_charger)
+{
+	if (!mt_charger)
+		return;
+
+	mt_charger_wake_state.chg_type = mt_charger->chg_type;
+	mt_charger_wake_state.chg_online = mt_charger->chg_online;
+	mt_charger_wake_state.input_suspend =
+		charger_manager_is_input_suspend();
+	mt_charger_wake_state.pd_online = charger_manager_pd_is_online();
+	mt_charger_wake_state_valid = true;
+}
+
+static bool mt_charger_wake_state_changed(struct mt_charger *mt_charger)
+{
+	if (!mt_charger || !mt_charger_wake_state_valid)
+		return true;
+
+	return mt_charger_wake_state.chg_type != mt_charger->chg_type ||
+		mt_charger_wake_state.chg_online != mt_charger->chg_online ||
+		mt_charger_wake_state.input_suspend !=
+			charger_manager_is_input_suspend() ||
+		mt_charger_wake_state.pd_online !=
+			charger_manager_pd_is_online();
+}
+
 static int mt_charger_suspend(struct device *dev)
 {
-	/* struct mt_charger *mt_charger = dev_get_drvdata(dev); */
+	struct platform_device *pdev = to_platform_device(dev);
+	struct mt_charger *mt_charger = platform_get_drvdata(pdev);
+
+	mt_charger_snapshot_state(mt_charger);
+
 	return 0;
 }
 
@@ -1618,6 +1666,13 @@ static int mt_charger_resume(struct device *dev)
 		pr_info("%s: get mt_charger failed\n", __func__);
 		return -ENODEV;
 	}
+
+	if (!mt_charger_wake_state_changed(mt_charger))
+		return 0;
+
+	mt_charger_snapshot_state(mt_charger);
+
+	pr_info("%s: charger state changed, notify supplies\n", __func__);
 
 	power_supply_changed(mt_charger->chg_psy);
 	power_supply_changed(mt_charger->ac_psy);
