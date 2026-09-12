@@ -146,12 +146,18 @@ int ssusb_set_vbus(struct otg_switch_mtk *otg_sx, int is_on)
 
 	if (is_on) {
 		#ifdef CONFIG_MTK_CHARGER
+		/* charger drivers may probe after mtu3; retry before use */
+		if (!ssusb->chg_dev)
+			ssusb->chg_dev = get_charger_by_name("secondary_chg");
 		if (ssusb->chg5_dev) {
 			charger_dev_enable_otg(ssusb->chg5_dev, true);
 			dev_info(ssusb->dev, "%s chg5 device detect!\n", __func__);
-		} else {
+		} else if (ssusb->chg_dev) {
 			charger_dev_enable_otg(ssusb->chg_dev, true);
-			dev_info(ssusb->dev, "%s chg1 device detect!\n", __func__);
+			dev_info(ssusb->dev, "%s chg device detect!\n", __func__);
+		} else {
+			dev_err(ssusb->dev, "%s: no charger dev for OTG boost\n",
+				__func__);
 		}
 		#endif
 		ret = regulator_enable(vbus);
@@ -719,9 +725,21 @@ int ssusb_otg_switch_init(struct ssusb_mtk *ssusb)
 	/* default as host, update state */
 	otg_sx->sw_state = ssusb->is_host ?
 				MTU3_SW_ID_GROUND : MTU3_SW_VBUS_VALID;
-	#ifdef CONFIG_MTK_CHARGER
+#ifdef CONFIG_MTK_CHARGER
+	/*
+	 * M2012K10C keeps the BC1.2 / D+/D- mux inside the xmusb350
+	 * charger, which registers as "secondary_chg" (DT charger_name =
+	 * "secondary_chg", i2c0 @0x35). Its enable_otg callback sets
+	 * chip->otg_enable, which is the only thing that stops charger-type
+	 * detection from pulling D+/D- away from the USB data path while we
+	 * act as a host. primary_chg is the mt6360 PMIC charger and has no
+	 * enable_otg op, so it must only be used as a fallback.
+	 */
+	ssusb->chg_dev = get_charger_by_name("secondary_chg");
+	if (!ssusb->chg_dev)
+		ssusb->chg_dev = get_charger_by_name("primary_chg");
 	ssusb->chg5_dev = get_charger_by_name("quinary_chg");
-	#endif
+#endif
 	/* initial operation mode */
 	otg_sx->op_mode = MTU3_DR_OPERATION_NORMAL;
 
