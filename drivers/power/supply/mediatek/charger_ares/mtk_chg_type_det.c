@@ -1712,6 +1712,7 @@ bool upmu_is_chr_det(void)
 		return -EINVAL;
 	}
 	mtk_chg = power_supply_get_drvdata(psy);
+	power_supply_put(psy);
 	return mtk_chg->chg_online;
 }
 
@@ -1735,6 +1736,7 @@ enum charger_type mt_get_charger_type(void)
 		return -EINVAL;
 	}
 	mtk_chg = power_supply_get_drvdata(psy);
+	power_supply_put(psy);
 
 	if (charger_manager_pd_is_online())
 		return STANDARD_CHARGER;
@@ -1755,6 +1757,7 @@ bool mt_charger_plugin(void)
 	mtk_chg = power_supply_get_drvdata(psy);
 	cti = mtk_chg->cti;
 	pr_info("%s plugin:%d\n", __func__, cti->plugin);
+	power_supply_put(psy);
 
 	return cti->plugin;
 }
