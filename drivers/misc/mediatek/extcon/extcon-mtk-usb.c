@@ -260,7 +260,7 @@ static int mtk_usb_extcon_set_vbus_v1(bool is_on) {
 	if (is_on) {
 		charger_dev_enable_otg(primary_charger, true);
 		charger_dev_set_boost_current_limit(primary_charger,
-			500000);
+			1800000);
 		#if 0
 		{// # workaround
 			charger_dev_kick_wdt(primary_charger);
@@ -278,7 +278,7 @@ static int mtk_usb_extcon_set_vbus_v1(bool is_on) {
 	if (is_on) {
 		charger_dev_enable_otg(primary_charger, true);
 		charger_dev_set_boost_current_limit(primary_charger,
-			500000);
+			1800000);
 	} else {
 		charger_dev_enable_otg(primary_charger, false);
 	}
