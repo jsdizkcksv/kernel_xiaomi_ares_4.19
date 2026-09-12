@@ -255,6 +255,21 @@ struct bq2597x_cfg {
 	bool sc8551_bypass_enable;
 };
 
+/*
+ * Snapshot of what fc2_psy reports, used to decide whether the resume path
+ * really has something to tell userspace. The master and the slave are two
+ * separate instances of this driver, so the snapshot has to be per device
+ * and cannot be a single file scope variable.
+ */
+struct bq2597x_wake_state {
+	bool usb_present;
+	bool vbus_present;
+	bool batt_present;
+	bool charge_enabled;
+	bool bq_charge_done;
+	bool hv_charge_enable;
+};
+
 struct bq2597x {
 	struct device *dev;
 	struct i2c_client *client;
@@ -348,6 +363,9 @@ struct bq2597x {
 	int hv_charge_enable;
 	int bq_charge_done;
 	int bypass_mode_enable;
+
+	struct bq2597x_wake_state wake_state;
+	bool wake_state_valid;
 };
 
 static int bq_debug_flag;
@@ -2971,6 +2989,30 @@ static inline bool is_device_suspended(struct bq2597x *bq)
 	return !bq->resume_completed;
 }
 
+static void bq2597x_snapshot_wake_state(struct bq2597x *bq)
+{
+	bq->wake_state.usb_present = bq->usb_present;
+	bq->wake_state.vbus_present = bq->vbus_present;
+	bq->wake_state.batt_present = bq->batt_present;
+	bq->wake_state.charge_enabled = bq->charge_enabled;
+	bq->wake_state.bq_charge_done = bq->bq_charge_done;
+	bq->wake_state.hv_charge_enable = bq->hv_charge_enable;
+	bq->wake_state_valid = true;
+}
+
+static bool bq2597x_wake_state_changed(struct bq2597x *bq)
+{
+	if (!bq->wake_state_valid)
+		return true;
+
+	return bq->wake_state.usb_present != bq->usb_present ||
+		bq->wake_state.vbus_present != bq->vbus_present ||
+		bq->wake_state.batt_present != bq->batt_present ||
+		bq->wake_state.charge_enabled != bq->charge_enabled ||
+		bq->wake_state.bq_charge_done != bq->bq_charge_done ||
+		bq->wake_state.hv_charge_enable != bq->hv_charge_enable;
+}
+
 static int bq2597x_suspend(struct device *dev)
 {
 	struct i2c_client *client = to_i2c_client(dev);
@@ -2979,6 +3021,9 @@ static int bq2597x_suspend(struct device *dev)
 	mutex_lock(&bq->irq_complete);
 	bq->resume_completed = false;
 	mutex_unlock(&bq->irq_complete);
+
+	bq2597x_snapshot_wake_state(bq);
+
 	bq2597x_enable_adc(bq, false);
 	bq_err("Suspend successfully!");
 
@@ -3014,6 +3059,13 @@ static int bq2597x_resume(struct device *dev)
 	}
 
 	bq2597x_enable_adc(bq, true);
+
+	if (!bq2597x_wake_state_changed(bq)) {
+		bq_err("Resume successfully, state unchanged!");
+		return 0;
+	}
+
+	bq2597x_snapshot_wake_state(bq);
 
 	power_supply_changed(bq->fc2_psy);
 	bq_err("Resume successfully!");
