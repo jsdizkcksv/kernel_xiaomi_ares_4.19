@@ -2168,11 +2168,28 @@ void mtk_charger_int_handler(void)
 			POWER_SUPPLY_PROP_TYPEC_MODE, &val);
 	type_mode = val.intval;
 
-	if (mt_get_charger_type() == CHARGER_UNKNOWN && type_mode == POWER_SUPPLY_TYPEC_NONE) {
-		mutex_lock(&pinfo->cable_out_lock);
-		pinfo->cable_out_cnt++;
-		chr_err("cable_out_cnt=%d\n", pinfo->cable_out_cnt);
-		mutex_unlock(&pinfo->cable_out_lock);
+	if (mt_get_charger_type() == CHARGER_UNKNOWN) {
+		/*
+		 * No charger is pulling current from the port. That is either a
+		 * plain cable-out (Type-C detached), or the port running as a
+		 * host/source (dock or OTG), where the Type-C mode stays attached
+		 * and never reaches POWER_SUPPLY_TYPEC_NONE.
+		 *
+		 * Both cases are "not charging" and must be reported as
+		 * STOP_CHARGING. Otherwise the battery driver never receives the
+		 * event that releases its "status wakelock", and the leaked
+		 * wakelock keeps events_in_progress non-zero, which makes
+		 * pm_get_wakeup_count() block forever and stops the system from
+		 * ever entering suspend.
+		 */
+		if (type_mode == POWER_SUPPLY_TYPEC_NONE) {
+			mutex_lock(&pinfo->cable_out_lock);
+			pinfo->cable_out_cnt++;
+			chr_err("cable_out_cnt=%d\n", pinfo->cable_out_cnt);
+			mutex_unlock(&pinfo->cable_out_lock);
+		} else
+			chr_err("charger unknown, typec mode %d still attached\n",
+				type_mode);
 		charger_manager_notifier(pinfo, CHARGER_NOTIFY_STOP_CHARGING);
 	} else
 		charger_manager_notifier(pinfo, CHARGER_NOTIFY_START_CHARGING);

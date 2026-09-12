@@ -917,6 +917,17 @@ void battery_update(struct battery_data *bat_data)
 			bat_data->BAT_CAPACITY, upmu_get_rgs_chrdet(), bat_data->BAT_STATUS);
 	}
 
+	/*
+	 * The status wakelock only exists to keep the system awake while the
+	 * charge status is being updated. Once the battery is no longer
+	 * charging it must not stay held: a leaked wakelock keeps
+	 * events_in_progress non-zero, which blocks pm_get_wakeup_count()
+	 * and permanently prevents the system from suspending.
+	 */
+	if (bat_data->BAT_STATUS != POWER_SUPPLY_STATUS_CHARGING &&
+		status_wakelock.active)
+		__pm_relax(&status_wakelock);
+
 	power_supply_changed(bat_psy);
 
 #if defined(CONFIG_MTK_DISABLE_GAUGE)
@@ -4136,6 +4147,7 @@ static int battery_callback(
 			battery_main.FORCE_RECHARGE = false;
 			battery_main.BAT_STATUS = POWER_SUPPLY_STATUS_NOT_CHARGING;
 			battery_update(&battery_main);
+			__pm_relax(&status_wakelock);
 		}
 		break;
 	case CHARGER_NOTIFY_NORMAL:
