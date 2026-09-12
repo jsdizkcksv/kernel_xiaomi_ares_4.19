@@ -83,6 +83,7 @@
 #define PROC_FILES_NUM 1
 static struct proc_dir_entry *proc_files[PROC_FILES_NUM] = {
 	NULL};
+static bool mtk_usb_dir_tried;
 
 enum ssusb_uwk_vers {
 	SSUSB_UWK_V1 = 1,
@@ -194,9 +195,23 @@ static void xhci_mtk_dbg_init(struct xhci_hcd_mtk *mtk)
 {
 	u8 idx = 0;
 
-	proc_mkdir("mtk_usb", NULL);
+	proc_files[idx] = proc_create_data("mtk_usb/testmode", 0644, NULL,
+					&testmode_fops, mtk);
 
-	proc_files[idx] = proc_create_data("mtk_usb/testmode", 0644, NULL, &testmode_fops, mtk);
+	/*
+	 * /proc/mtk_usb is a shared namespace; the TPHY and the mtu3
+	 * phy-debugfs drivers already create it at probe time. Create it
+	 * here only when it is really missing, because proc_mkdir() raises
+	 * WARN(1) "already registered" when the entry exists. Try it at
+	 * most once per boot so an existing parent can never trigger it.
+	 */
+	if (!proc_files[idx] && !mtk_usb_dir_tried) {
+		mtk_usb_dir_tried = true;
+		proc_mkdir("mtk_usb", NULL);
+		proc_files[idx] = proc_create_data("mtk_usb/testmode", 0644,
+						NULL, &testmode_fops, mtk);
+	}
+
 	if (!proc_files[idx])
 		pr_info("%s: fail to create testmode node in procfs\n", __func__);
 	idx++;
@@ -207,8 +222,10 @@ static void xhci_mtk_dbg_exit(struct xhci_hcd_mtk *mtk)
 	u8 idx = 0;
 
 	for (; idx < PROC_FILES_NUM; idx++) {
-		if (proc_files[idx])
+		if (proc_files[idx]) {
 			proc_remove(proc_files[idx]);
+			proc_files[idx] = NULL;
+		}
 	}
 }
 
