@@ -11,6 +11,7 @@
 #include <linux/of_address.h>
 #include <linux/io.h>
 #include <linux/rtc.h>
+#include <linux/timekeeping.h>
 #include <linux/wakeup_reason.h>
 #include <linux/syscore_ops.h>
 #include <mt6885_cond.h>
@@ -59,12 +60,12 @@ static DEFINE_SPINLOCK(lwr_lock);
 
 struct lpm_state_records_buff {
 	char msg[256];
-	struct timespec key_time;
+	struct timespec64 key_time;
 };
 
 struct lpm_wakeup_records_buff {
 	char msg[256];
-	struct timespec key_time;
+	struct timespec64 key_time;
 };
 
 struct lpm_state_records_buff lsr_buff[MAX_LSR_RECORDS];
@@ -1010,7 +1011,7 @@ static void lsr_record(const struct mt6885_spm_wake_status *wakesta, unsigned in
 
 		if (!conn_sleep || !modem_sleep || !subsys_sleep) {
 			index_tail = m;
-			getnstimeofday(&lsr_buff[m].key_time);
+			ktime_get_coarse_real_ts64(&lsr_buff[m].key_time);
 			sprintf(lsr_buff[m++].msg, "%u, %s, %s, %s, req_sta = 0x%x 0x%x 0x%x 0x%x 0x%x, %u", wakesta->timer_out,
 					conn_sleep ? "connectivity sleep" : "connectivity not sleep",
 					modem_sleep ? "modem sleep" : "modem not sleep",
@@ -1092,7 +1093,7 @@ static void lwr_record(char *buf)
 		return;
 
 	lwr_index_tail = m;
-	getnstimeofday(&lwr_buff[m].key_time);
+	ktime_get_coarse_real_ts64(&lwr_buff[m].key_time);
 	sprintf(lwr_buff[m++].msg, "%s", buf);
 
 	if (m >= MAX_LWR_RECORDS)
