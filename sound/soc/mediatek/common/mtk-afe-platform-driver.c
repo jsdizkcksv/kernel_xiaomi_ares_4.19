@@ -171,6 +171,10 @@ int mtk_afe_pcm_ack(struct snd_pcm_substream *substream)
 static void *get_dma_ptr(struct snd_pcm_runtime *runtime,
 			   int channel, unsigned long hwoff)
 {
+	/* hostless PCMs are created without a DMA buffer */
+	if (!runtime->dma_area || !runtime->channels)
+		return NULL;
+
 	return runtime->dma_area + hwoff +
 		channel * (runtime->dma_bytes / runtime->channels);
 }
@@ -180,8 +184,12 @@ static int default_write_copy(struct snd_pcm_substream *substream,
 			      int channel, unsigned long hwoff,
 			      void *buf, unsigned long bytes)
 {
-	if (copy_from_user(get_dma_ptr(substream->runtime, channel, hwoff),
-			   (void __user *)buf, bytes))
+	void *dma_ptr = get_dma_ptr(substream->runtime, channel, hwoff);
+
+	if (!dma_ptr)
+		return -ENODEV;
+
+	if (copy_from_user(dma_ptr, (void __user *)buf, bytes))
 		return -EFAULT;
 	return 0;
 }
@@ -191,9 +199,12 @@ static int default_read_copy(struct snd_pcm_substream *substream,
 			     int channel, unsigned long hwoff,
 			     void *buf, unsigned long bytes)
 {
-	if (copy_to_user((void __user *)buf,
-			 get_dma_ptr(substream->runtime, channel, hwoff),
-			 bytes))
+	void *dma_ptr = get_dma_ptr(substream->runtime, channel, hwoff);
+
+	if (!dma_ptr)
+		return -ENODEV;
+
+	if (copy_to_user((void __user *)buf, dma_ptr, bytes))
 		return -EFAULT;
 	return 0;
 }
@@ -218,8 +229,10 @@ static int mtk_afe_pcm_copy_user(struct snd_pcm_substream *substream,
 		if (ret)
 			return -EFAULT;
 	} else {
-		sp_copy(substream, channel, hwoff,
+		ret = sp_copy(substream, channel, hwoff,
 			(void __user *)buf, bytes);
+		if (ret)
+			return ret;
 	}
 
 	return 0;
