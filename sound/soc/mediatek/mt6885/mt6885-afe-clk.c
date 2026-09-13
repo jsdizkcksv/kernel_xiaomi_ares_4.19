@@ -59,7 +59,16 @@ static const char *aud_clks[CLK_NUM] = {
 	[CLK_TOP_APLL12_DIV3] = "top_apll12_div3",
 	[CLK_TOP_APLL12_DIV4] = "top_apll12_div4",
 	[CLK_TOP_APLL12_DIVB] = "top_apll12_divb",
-	[CLK_TOP_APLL12_DIV5] = "top_apll12_div5",
+	/*
+	 * DIV5 is split across two registers (LSB nibble in CLK_AUDDIV_2,
+	 * MSB nibble in CLK_AUDDIV_3), so topckgen exposes it as
+	 * "top_apll12_div5_lsb"/"top_apll12_div5_msb".  Both halves must be
+	 * requested so devm_clk_get() succeeds and the gate refcounts stay
+	 * balanced.  CCF only gates these clocks; the divider value itself is
+	 * programmed by hand in mt6885_mck_enable().
+	 */
+	[CLK_TOP_APLL12_DIV5_LSB] = "top_apll12_div5_lsb",
+	[CLK_TOP_APLL12_DIV5_MSB] = "top_apll12_div5_msb",
 	[CLK_TOP_APLL12_DIV6] = "top_apll12_div6",
 	[CLK_TOP_APLL12_DIV7] = "top_apll12_div7",
 	[CLK_TOP_APLL12_DIV8] = "top_apll12_div8",
@@ -505,6 +514,7 @@ struct mt6885_mck_div {
 	int div_mask_sft;
 	int div_mask;
 	int div_sft;
+	int div_msb_clk_id;
 	int div_msb_reg;
 	int div_msb_mask_sft;
 	int div_msb_mask;
@@ -606,7 +616,8 @@ static const struct mt6885_mck_div mck_div[MT6885_MCK_NUM] = {
 	},
 	[MT6885_I2S5_MCK] = {
 		.m_sel_id = CLK_TOP_I2S5_M_SEL,
-		.div_clk_id = CLK_TOP_APLL12_DIV5,
+		.div_clk_id = CLK_TOP_APLL12_DIV5_LSB,
+		.div_msb_clk_id = CLK_TOP_APLL12_DIV5_MSB,
 		.div_pdn_reg = CLK_AUDDIV_2,
 		.div_pdn_mask_sft = APLL12_DIV5_PDN_MASK_SFT,
 		.div_reg = CLK_AUDDIV_2,
@@ -736,6 +747,22 @@ int mt6885_mck_enable(struct mtk_base_afe *afe, int mck_id, int rate)
 	if (mck_id != MT6885_I2S5_MCK)
 		return 0;
 
+	/* i2s5 divider is split across two registers; enable the MSB half */
+	div_clk_id = mck_div[mck_id].div_msb_clk_id;
+	ret = clk_prepare_enable(afe_priv->clk[div_clk_id]);
+	if (ret) {
+		dev_err(afe->dev, "%s(), clk_prepare_enable %s fail %d\n",
+			__func__, aud_clks[div_clk_id], ret);
+		return ret;
+	}
+	ret = clk_set_rate(afe_priv->clk[div_clk_id], rate);
+	if (ret) {
+		dev_err(afe->dev, "%s(), clk_set_rate %s, rate %d, fail %d\n",
+			__func__, aud_clks[div_clk_id],
+			rate, ret);
+		return ret;
+	}
+
 	afe_priv->mck_rate[mck_id] = rate;
 
 	div = apll_rate / rate - 1;
@@ -788,6 +815,11 @@ void mt6885_mck_disable(struct mtk_base_afe *afe, int mck_id)
 	int div_clk_id = mck_div[mck_id].div_clk_id;
 
 	clk_disable_unprepare(afe_priv->clk[div_clk_id]);
+	/* i2s5 divider is split across two registers */
+	if (mck_id == MT6885_I2S5_MCK) {
+		div_clk_id = mck_div[mck_id].div_msb_clk_id;
+		clk_disable_unprepare(afe_priv->clk[div_clk_id]);
+	}
 	if (m_sel_id >= 0)
 		clk_disable_unprepare(afe_priv->clk[m_sel_id]);
 }
