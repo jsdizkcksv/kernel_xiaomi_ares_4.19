@@ -1,0 +1,24 @@
+# SPDX-License-Identifier: GPL-2.0
+#
+# MTK frame boost scheduler
+#
+
+config MTK_FRAME_BOOST
+	bool "MTK frame boost scheduler"
+	depends on CPU_FREQ && CPU_FREQ_GOV_SCHEDUTIL
+	default n
+	help
+	  A self-contained CPU / GPU / DDR boost scheduler for the MediaTek
+	  display path.
+
+	  Say Y here to add a closed-loop boost scheduler that fills in for
+	  the missing fpsgo / DVFSRC / PPM performance stack: it keeps a
+	  per-cluster CPU frequency floor through the generic PM QoS
+	  freq_qos(FREQ_QOS_MIN) interface, re-asserts a GPU OPP floor via
+	  mt_gpufreq_target(KIR_POLICY), and raises the DDR / vcore OPP
+	  through the MediaTek PM QoS interface.
+
+	  It is driven by an input edge detector and by a userspace request
+	  interface at /sys/kernel/frame_boost/.
+
+	  If unsure, say N.

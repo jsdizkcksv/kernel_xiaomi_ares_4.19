@@ -210,3 +210,5 @@ ifeq ($(CONFIG_BUILD_XIAOMI_CAMERA_IMAGE_NAMES),"mediatek/pissarro")
 subdir-ccflags-y += -D_XIAOMI_PISSARRO_
 endif
 
+
+obj-$(CONFIG_MTK_FRAME_BOOST) += frame_boost/
