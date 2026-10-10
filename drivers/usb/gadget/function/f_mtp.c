@@ -770,10 +770,9 @@ void mtp_dbg_dump(void)
 	 *	DB_OPT_DEFAULT|DB_OPT_NATIVE_BACKTRACE, string, string);
 	 */
 #else
-	{
-		char *ptr = NULL;
-		*ptr = 0;
-	}
+	/* 本树未定义 CONFIG_MEDIATEK_SOLUTION。原厂在此故意写空指针以触发 AEE，
+	 * 会变成误 panic，这里降级为只打印。 */
+	pr_notice("%s", string);
 #endif
 }
 
