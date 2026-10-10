@@ -1405,7 +1405,11 @@ static int clk_disable_unused(void)
 
 	if (clk_ignore_unused) {
 		pr_warn("clk: Not disabling unused clocks\n");
+#if !defined(CONFIG_MACH_MT6893) && !defined(CONFIG_MACH_MT6885)
 		return 0;
+#else
+		pr_warn("clk: MT6893: force clean unused clocks/PLLs\n");
+#endif
 	}
 
 
