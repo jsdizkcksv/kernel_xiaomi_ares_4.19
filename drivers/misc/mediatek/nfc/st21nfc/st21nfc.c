@@ -294,7 +294,19 @@ static int st21nfc_loc_set_polaritymode(
 	}
 
 
-	ret = enable_irq_wake(client->irq);
+	/*
+	 * FIX(standby): 原代码在这里【无条件】把 NFC 中断使能为系统唤醒源。
+	 * 该芯片在系统挂起过程中会把 IRQ 线拉高（DTS: IRQ_TYPE_LEVEL_HIGH），
+	 * 只要它是 wakeup source，suspend_device_irqs() 就会 arm 它，
+	 * pm_system_irq_wakeup() 随即在 syscore_suspend() 之后把挂起打断
+	 * （实测 success 恒为 0、spm_sleep_count 恒为 0、待机电流 ~160-180 mA）。
+	 *
+	 * 注意：st21nfc_suspend() 里那段 enable_irq_wake() 分支因
+	 * device_may_wakeup()/irq_enabled 为 false 而不可达（dmesg 里只有外层
+	 * "st21nfc_suspend 1"、没有内层打印，可证），所以必须在这里改。
+	 * 代价：失去息屏时 NFC 刷卡唤醒；亮屏后 NFC 功能不受影响。
+	 */
+	ret = 0; /* was: enable_irq_wake(client->irq); */
 	if (ret) {
 		pr_err("%s : enable_irq_wake failed\n", __func__);
 	}
@@ -1316,8 +1328,19 @@ static int st21nfc_suspend(struct device *device)
         pr_err("%s : st21nfc_suspend 1\n", __func__);
 	if (device_may_wakeup(&client->dev) && st21nfc_dev->irq_enabled) {
                 pr_err("%s : st21nfc_suspend\n", __func__);
-		if (!enable_irq_wake(client->irq))
-			st21nfc_dev->irq_wake_up = true;
+		/*
+		 * FIX(standby): 该 NFC 芯片在系统挂起过程中会把 IRQ 线拉高
+		 * （DTS: IRQ_TYPE_LEVEL_HIGH）。只要它还是 wakeup source，
+		 * syscore_suspend() 之后就会立刻触发 pm_system_irq_wakeup()，
+		 * 使每一次 deep 挂起在 suspend_enter() 里被判 *wakeup 而
+		 * error = -EBUSY 中止 —— 实测 13/13 次失败、spm_sleep_count 恒为 0、
+		 * 待机电流 ~180 mA。
+		 * 因此挂起期间既把它从唤醒源摘掉，也屏蔽中断本身；resume 时恢复。
+		 * 注意：这会失去"屏幕关闭时 NFC 刷卡唤醒"，亮屏后 NFC 功能不受影响。
+		 */
+		disable_irq_wake(client->irq);
+		disable_irq(client->irq);
+		st21nfc_dev->irq_wake_up = true;
 	}
 
 	if (!IS_ERR_OR_NULL(st21nfc_dev->gpiod_pidle))
@@ -1335,8 +1358,10 @@ static int st21nfc_resume(struct device *device)
         pr_err("%s : st21nfc_resume 1\n", __func__);
 	if (device_may_wakeup(&client->dev) && st21nfc_dev->irq_wake_up) {
                 pr_err("%s : st21nfc_resume\n", __func__);
-		if (!disable_irq_wake(client->irq))
-			st21nfc_dev->irq_wake_up = false;
+		/* FIX(standby): 与 suspend 严格对称地恢复 */
+		enable_irq(client->irq);
+		enable_irq_wake(client->irq);
+		st21nfc_dev->irq_wake_up = false;
 	}
 
 	if (!IS_ERR(st21nfc_dev->gpiod_pidle)) {
