@@ -20,6 +20,7 @@ subdir-ccflags-y += -DMTK_MT6739_MTK_CPU_FREQ
 endif
 
 obj-y += perfmgr_main.o
+obj-y += perf_mode.o
 obj-y += base/
 
 obj-$(CONFIG_MTK_PERF_OBSERVER) += observer/
