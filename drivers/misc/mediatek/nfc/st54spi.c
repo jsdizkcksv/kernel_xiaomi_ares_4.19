@@ -109,6 +109,7 @@ struct st54spi_data {
 	int sehal_needs_poweron;
 	int se_is_poweron;
 	int se_is_poweron_for_comm;
+	int clk_gated_for_suspend;
 	struct pinctrl *pctrl;
 	struct pinctrl_state *pctrl_mode_spi, *pctrl_mode_idle;
 
@@ -1249,19 +1250,66 @@ static int st54spi_remove(struct spi_device *spi)
 	return 0;
 }
 
+#ifdef CONFIG_PM_SLEEP
+static int st54spi_suspend(struct device *dev)
+{
+	struct st54spi_data *st54spi = spi_get_drvdata(to_spi_device(dev));
+	struct spi_device *spi;
+
+	if (!st54spi || !st54spi->se_is_poweron_for_comm)
+		return 0;
+
+	spi = st54spi->spi ?: st54spi->spi_reset;
+	if (!spi)
+		return 0;
+
+	/*
+	 * The secure element HAL opens /dev/st54spi once at boot and keeps the
+	 * file descriptor open for the whole uptime, so st54spi_release() - and
+	 * with it the matching mt_spi_disable_master_clk() - never runs.
+	 * Release the SPI master clock here instead: otherwise INFRA_AO CG bit
+	 * 26 (ifrao_spi5) stays enabled while the system is suspended and keeps
+	 * the SPM resource constraints for dram/syspll/bus26m blocked.
+	 */
+	mt_spi_disable_master_clk(spi);
+	st54spi->clk_gated_for_suspend = 1;
+
+	return 0;
+}
+
+static int st54spi_resume(struct device *dev)
+{
+	struct st54spi_data *st54spi = spi_get_drvdata(to_spi_device(dev));
+	struct spi_device *spi;
+
+	if (!st54spi || !st54spi->clk_gated_for_suspend)
+		return 0;
+
+	spi = st54spi->spi ?: st54spi->spi_reset;
+	if (spi)
+		mt_spi_enable_master_clk(spi);
+	st54spi->clk_gated_for_suspend = 0;
+
+	return 0;
+}
+#endif
+
+static const struct dev_pm_ops st54spi_pm_ops = {
+	SET_SYSTEM_SLEEP_PM_OPS(st54spi_suspend, st54spi_resume)
+};
+
 static struct spi_driver st54spi_spi_driver = {
 	.driver = {
 			.name = "st54spi",
 			.of_match_table = of_match_ptr(st54spi_dt_ids),
 			.acpi_match_table = ACPI_PTR(st54spi_acpi_ids),
+			.pm = &st54spi_pm_ops,
 		},
 	.probe = st54spi_probe,
 	.remove = st54spi_remove,
 
-    /* NOTE:  suspend/resume methods are not necessary here.
-     * We don't do anything except pass the requests to/from
-     * the underlying controller.  The refrigerator handles
-     * most issues; the controller driver handles the rest.
+    /* The suspend/resume callbacks above only gate the SPI master clock;
+     * everything else is passed through to the underlying controller.
      */
 };
 
