@@ -267,6 +267,30 @@ static int st21nfc_loc_set_polaritymode(
 		irq_type = IRQ_TYPE_EDGE_RISING;
 		break;
 	}
+
+	/*
+	 * FIX(standby): force edge trigger.
+	 *
+	 * The chip signals "data available" by driving its IRQ line high and
+	 * holding it high - the HAL reads the data over I2C and the chip then
+	 * releases the line (see st21nfc_poll(): "Wake_up_pin == high").  With
+	 * IRQ_TYPE_LEVEL_HIGH the armed wakeup IRQ fires again as soon as
+	 * suspend_device_irqs() re-enables it, so pm_system_irq_wakeup()
+	 * aborts every suspend right after syscore_suspend() (observed on
+	 * ares: "Resume caused by IRQ 296, nfc" every 0.2-0.4 s and
+	 * spm_sleep_count stuck at 0).  The HAL asks for IRQF_TRIGGER_HIGH,
+	 * so override it here.
+	 *
+	 * With edge trigger a steady high level no longer re-triggers, so the
+	 * suspend succeeds (spm_sleep_count climbs, no more nfc aborts).
+	 * Trade-off, observed on ares with the screen off: if the line is
+	 * already high when a card is presented there is no new rising edge,
+	 * so the card does not wake the device.  Wake-on-NFC-card therefore
+	 * stays broken; it needs the pending-data condition (IRQ line held
+	 * high) to be resolved first.
+	 */
+	irq_type = IRQ_TYPE_EDGE_RISING;
+	st21nfc_dev->polarity_mode = IRQF_TRIGGER_RISING;
 	if (st21nfc_dev->irq_is_attached) {
 		disable_irq_wake(client->irq);
 		devm_free_irq(dev, client->irq, st21nfc_dev);
