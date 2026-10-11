@@ -48,13 +48,32 @@ struct perf_sw {
 	bool saved_ok;
 };
 
+/*
+ * The switchable knobs.  daily mode writes @off, game mode writes back the
+ * value captured at boot.  A node that does not exist (or rejects the value)
+ * simply fails its write and is skipped.
+ */
 static struct perf_sw perf_sws[] = {
+	/* fpsgo / ppm / boost_ctrl CFP / gbe / task_turbo */
 	{ "/sys/kernel/fpsgo/common/fpsgo_enable",		"0", {0}, false },
 	{ "/proc/ppm/enabled",					"0", {0}, false },
 	{ "/proc/perfmgr/boost_ctrl/cpu_ctrl/cfp_enable",	"0", {0}, false },
 	{ "/sys/kernel/gbe/gbe_enable1",			"0", {0}, false },
 	{ "/sys/kernel/gbe/gbe_enable2",			"0", {0}, false },
 	{ "/sys/module/task_turbo/parameters/feats",		"0", {0}, false },
+
+	/* EAS / scheduler extension knobs (boost_ctrl/eas_ctrl) */
+	{ "/proc/perfmgr/boost_ctrl/eas_ctrl/boot_boost",	"0", {0}, false },
+	{ "/proc/perfmgr/boost_ctrl/eas_ctrl/sched_boost",	"0", {0}, false },
+	{ "/proc/perfmgr/boost_ctrl/eas_ctrl/perfserv_fg_boost", "0", {0}, false },
+	{ "/proc/perfmgr/boost_ctrl/eas_ctrl/perfserv_bg_boost", "0", {0}, false },
+	{ "/proc/perfmgr/boost_ctrl/eas_ctrl/perfserv_ta_boost", "0", {0}, false },
+	{ "/proc/perfmgr/boost_ctrl/eas_ctrl/perfserv_uclamp_min", "0", {0}, false },
+	{ "/proc/perfmgr/boost_ctrl/eas_ctrl/perfserv_fg_uclamp_min", "0", {0}, false },
+	{ "/proc/perfmgr/boost_ctrl/eas_ctrl/perfserv_bg_uclamp_min", "0", {0}, false },
+	{ "/proc/perfmgr/boost_ctrl/eas_ctrl/perfserv_ta_uclamp_min", "0", {0}, false },
+	{ "/proc/perfmgr/boost_ctrl/eas_ctrl/perfserv_prefer_idle", "0", {0}, false },
+	{ "/proc/perfmgr/boost_ctrl/eas_ctrl/perfserv_ext_launch_mon", "0", {0}, false },
 };
 
 static int perf_mode = PERF_MODE_AUTO;
@@ -167,8 +186,8 @@ static ssize_t perf_mode_write(struct file *file, const char __user *ubuf,
 
 	if (!strcmp(buf, "daily"))
 		perf_mode = PERF_MODE_DAILY;
-	else if (!strcmp(buf, "game"))
-		perf_mode = PERF_MODE_GAME;
+	else if (!strcmp(buf, "game") || !strcmp(buf, "bench"))
+		perf_mode = PERF_MODE_GAME;	/* bench is an alias for game */
 	else if (!strcmp(buf, "auto"))
 		perf_mode = PERF_MODE_AUTO;
 	else
